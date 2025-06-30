@@ -20,13 +20,17 @@
       str2bool
       submit_gemini_api
       submit_llama3_hf
+      submit_llama3_paceice
       submit_mixtral
       submit_mixtral_hf
+      submit_mixtral_paceice
+      submit_qwen_paceice
    
    .. rubric:: Classes
 
    .. autosummary::
    
+      AutoModelForCausalLM
       AutoTokenizer
       InferenceClient
    

@@ -1,3 +1,9 @@
+import sys
+
+print("Python Executable:", sys.executable)
+print("Python Version:", sys.version)
+print("System Path:", sys.path)
+
 import os
 import copy
 import glob
@@ -89,7 +95,10 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
     if (PROB_EOT > np.random.uniform()) and (GEN_COUNT > 0):
         print("\t‣ EoT")
         top_gene = np.random.choice([x[0] for x in TOP_N_GENES])
-        parts_x = split_file(f"{SOTA_ROOT}/models/network_{top_gene}.py")
+        if FILE_TYPE == 'yaml':
+            parts_x = split_file(f"{SOTA_ROOT}/models/network_{top_gene}.yaml")
+        elif FILE_TYPE == 'py':
+            parts_x = split_file(f"{SOTA_ROOT}/models/network_{top_gene}.py")
         parts_y = split_file(SEED_NETWORK)
         parts = [(x.strip(), y.strip(), idx) for idx, (x, y) in enumerate(zip(parts_x[1:], parts_y[1:]))]
         random.shuffle(parts)
@@ -117,9 +126,9 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
     return template_txt, mute_type
 
 
-def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
+def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network_v3.yaml',
                       input_filename_y=None,
-                      output_filename=f'{SOTA_ROOT}/models/network_x.py',
+                      output_filename=f'{SOTA_ROOT}/models/network_x.yaml',
                       gpu='TeslaV100-PCIE-32GB',
                       python_file='src/llm_mutation.py', 
                       top_p=0.1, temperature=0.2,
@@ -127,7 +136,7 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
                      ):
     
     def fetch_gene(filepath):
-        return os.path.basename(filepath).replace('network_','').replace('.py','')
+        return os.path.basename(filepath).replace('network_','').replace('.yaml','')
     
     global GLOBAL_DATA_ANCESTRY
     
@@ -154,7 +163,7 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
             file.write(template_txt)
             
         temp_text = f'{python_file} {input_filename_x} {output_filename} {file_path} --top_p {top_p} --temperature {temperature}'
-        python_runline = f"python {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --inference_submission {INFERENCE_SUBMISSION}"
+        python_runline = f"uv run {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --inference_submission {INFERENCE_SUBMISSION}"
         
     elif python_file=='src/llm_crossover.py':
         gene_id_parent2 = fetch_gene(input_filename_y)
@@ -162,7 +171,7 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
                                                 mutation_type=None, gene_id_parent2=gene_id_parent2)
         
         temp_text = f"{python_file} {input_filename_x} {input_filename_y} {output_filename} --top_p {top_p} --temperature {temperature}"
-        python_runline = f"python {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --inference_submission {INFERENCE_SUBMISSION}"
+        python_runline = f"uv run {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --inference_submission {INFERENCE_SUBMISSION}" # Change to use uv run
     else:
         raise ValueError("Invalid python_file argument")
 
@@ -293,8 +302,8 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
     # Assign a file path and name for the model creation bash
     file_path = os.path.join(out_dir, f'{gene_id}.sh')
     successful_sub_flag, job_id, local_output = submit_bash(file_path, 
-                                              input_filename_x=f'{SOTA_ROOT}/network.py',
-                                              output_filename =f'{SOTA_ROOT}/models/network_{gene_id}.py',
+                                              input_filename_x=f'{SOTA_ROOT}/network_v3.yaml',
+                                              output_filename =f'{SOTA_ROOT}/models/network_{gene_id}.yaml',
                                               gpu=LLM_GPU,
                                               python_file='src/llm_mutation.py', 
                                               top_p=0.1, temperature=temperature)
@@ -321,14 +330,26 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
     return individual
     
 def submit_run(gene_id):
-    def write_bash_script_py(gene_id, train_file='./sota/ExquisiteNetV2/train.py'):
-        if not MACOS:
-            tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -amp"
-        else:
-            tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -epoch 2"
+    def write_bash_script_py(gene_id, train_file='sota/ultralytics/test.py'):
+        # if not MACOS:
+        #     tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -amp"
+        # else:
+        #     tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -epoch 2"
 
-        # python_runline = f'python {train_file} -bs 216 -epoch 2 -network "models.network_{gene_id}" {tmp}'
-        python_runline = f'python {train_file} -bs 216 -network "models.network_{gene_id}" {tmp}'
+        # # python_runline = f'python {train_file} -bs 216 -epoch 2 -network "models.network_{gene_id}" {tmp}'
+        # python_runline = f'python {train_file} -bs 216 -network "models.network_{gene_id}" {tmp}'
+
+        if FILE_TYPE == 'py':
+            if not MACOS:
+                tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -amp"
+            else:
+                tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -epoch 2"
+
+            # python_runline = f'python {train_file} -bs 216 -epoch 2 -network "models.network_{gene_id}" {tmp}'
+            python_runline = f'python {train_file} -bs 216 -network "models.network_{gene_id}" {tmp}'
+        elif FILE_TYPE == 'yaml':
+            train_file = './sota/ultralytics/test.py'
+            python_runline = f'uv run {train_file} -network "network_{gene_id}.yaml"' # Change from python to uv run
         bash_script_content = PYTHON_BASH_SCRIPT_TEMPLATE.format(python_runline)
         return bash_script_content
 
@@ -377,8 +398,8 @@ def evalModel(individual):
 def check4model2run(gene_id):
     # model_path = os.path.join(str(GENERATION), f'{gene_id}_model.txt')
     
-    print(f'Checking for: SOTA_ROOT ./models/network_{gene_id}.py')
-    model_path = f'{SOTA_ROOT}/models/network_{gene_id}.py'
+    print(f'Checking for: SOTA_ROOT ./models/network_{gene_id}.yaml')
+    model_path = f'{SOTA_ROOT}/models/network_{gene_id}.yaml'
     if os.path.exists(model_path):
         if GLOBAL_DATA[gene_id]['status'] != 'running eval':
             submit_run(gene_id)
@@ -411,13 +432,15 @@ def check4results(gene_id):
         out_dir = str(GENERATION)
         # The job saves the model results to a file f'{gene_id}_results.txt'
         # results_path = os.path.join(out_dir, f'{gene_id}_results.txt')
-        results_path = f'{SOTA_ROOT}/results/{gene_id}_results.txt'
+        results_path = f'{RESULT_DIR}/{gene_id}_results.txt'
         with open(results_path, 'r') as file:
             results = file.read()
         results = results.split(',')
         fitness = [float(r.strip()) for r in results]
         # TODO: get all features later
-        fitness = [fitness[0], fitness[1]]
+        fitness = [fitness[OBJECTIVE_MAX], fitness[OBJECTIVE_MIN]] # Index 0 maximizes, Index 1 minimizes
+        #: fitness[0]: parameters, fitness[1]: inference speed 
+        #: For YOLO evaluating on COCO, fitness[2]: Box Precision, fitness[3]: Recall, fitness[4]: MAP50, fitness[5]: MAP50 - 95
         fitness = tuple(fitness)
         
         GLOBAL_DATA[gene_id]['status'] = 'completed'
@@ -647,9 +670,9 @@ def customCrossover(ind1, ind2):
         # Create the bash file for the new job
         file_path = os.path.join(out_dir, f'{new_gene_id}.sh')
         successful_sub_flag, job_id, local_output = submit_bash(file_path, 
-                                          input_filename_x=f'{SOTA_ROOT}/models/network_{gene_id_1}.py',
-                                          input_filename_y=f'{SOTA_ROOT}/models/network_{gene_id_2}.py',
-                                          output_filename=f'{SOTA_ROOT}/models/network_{new_gene_id}.py',
+                                          input_filename_x=f'{SOTA_ROOT}/models/network_{gene_id_1}.yaml',
+                                          input_filename_y=f'{SOTA_ROOT}/models/network_{gene_id_2}.yaml',
+                                          output_filename=f'{SOTA_ROOT}/models/network_{new_gene_id}.yaml',
                                           gpu=LLM_GPU,
                                           python_file='src/llm_crossover.py', 
                                           top_p=0.1, temperature=temperature)
@@ -723,8 +746,8 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     file_path = os.path.join(str(GENERATION), f'{new_gene_id}.sh')
     temperature = round(random.uniform(temp_min, temp_max), 2)
     successful_sub_flag, job_id, local_output = submit_bash(file_path, 
-                                              input_filename_x= f'{SOTA_ROOT}/models/network_{old_gene_id}.py',
-                                              output_filename = f'{SOTA_ROOT}/models/network_{new_gene_id}.py',
+                                              input_filename_x= f'{SOTA_ROOT}/models/network_{old_gene_id}.yaml',
+                                              output_filename = f'{SOTA_ROOT}/models/network_{new_gene_id}.yaml',
                                               gpu=LLM_GPU,
                                               python_file='src/llm_mutation.py', 
                                               top_p=0.1, temperature=temperature)

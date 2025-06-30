@@ -15,5 +15,8 @@ Q: How can the model's performance or efficiency be elevated by amalgamating ele
 4. Retain original tensor input/output sizes.
 5. Provide full code.
 6. Must function with default settings.
+7. The script that will parse your output will only take the first block of code/yaml output. Put it into one code block.
+8. Do not put the explanation into the code block.
+9. If the input is in YAML format, keep all outputs in YAML formatting
 
 A: Let us think step by step

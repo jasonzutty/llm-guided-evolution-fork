@@ -1,21 +1,26 @@
 #!/bin/bash
 #SBATCH --job-name=llm_opt
-#SBATCH -t 8:00:00              		# Runtime in D-HH:MM
-#SBATCH --mem-per-gpu 16G
-#SBATCH -n 1                          # number of CPU cores
-#SBATCH -N 1
-#SBATCH --gres=gpu:1
-#SBATCH -C "A100-40GB|A100-80GB|H100|V100-16GB|V100-32GB|RTX6000|A40|L40S"
+#SBATCH -t 16:00:00                 # Maximum walltime allowed for CPU jobs
+#SBATCH --gres=gpu:0                # No GPUs for this job
+#SBATCH --nodes=1                   # Request 1 node
+#SBATCH --mem=0                     # Request all available memory on the node (as per your documentation)
+#SBATCH -c 24                       # Request 48 threads (all 24 cores x 2 CPUs with hyperthreading for Gold 6226)
+# All of the above settings are configured for running on the PACE-ICE HPC
 
-echo "launching LLM Guided Evolution"
+echo "launching LLM-Guided-Evolution"
 hostname
-# module load anaconda3/2020.07 2021.11
-module load cuda
-module load anaconda3
-export CUDA_VISIBLE_DEVICES=0
+module load cuda/12.6.1
+# module load anaconda3 # <--- COMMENT THIS OUT OR REMOVE IT if it's adding a competing Python to PATH
 
-conda activate llm_guided_env
-export LD_LIBRARY_PATH=~/.conda/envs/llm_guided_env/lib/python3.12/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH
-conda info
+# Verify the path and environment immediately before running your script
+echo "--- DEBUGGING PYTHON ENVIRONMENT ---"
+which python
+echo "--- END DEBUGGING ---"
 
-python run_improved.py first_test
+# Set LD_LIBRARY_PATH if needed (double-check the path, it looks slightly off for a site-packages lib)
+# Ensure this path exists and is correct for your 'llm_guided_env' (note: your current active env is 'llm_env')
+# export LD_LIBRARY_PATH="/home/hice1/yzhang3942/.conda/envs/llm_env/lib:$LD_LIBRARY_PATH" # Corrected path for typical lib
+
+# Now, execute your script using the explicit Python executable
+source .venv/bin/activate
+uv run run_improved.py first_test
