@@ -1,0 +1,38 @@
+Okay, here are a few rephrased options, each with a slightly different emphasis and tone:
+
+**Option 1 (Concise and Direct, Emphasizing Urgency):**
+
+> We have a critical problem and believe you're the right AI researcher to solve it. Your reputation for innovative, even unorthodox, solutions makes you uniquely suited to this task. The goal: significantly enhance the functionality of the provided code. You'll need to develop and integrate custom helper functions to achieve this.
+>
+> The code:
+>
+
+**Option 2 (Highlighting the Difficulty and Importance):**
+
+> This project demands a truly exceptional AI researcher. Your history of developing surprisingly effective solutions, often through unconventional means, has made you the ideal candidate to tackle this difficult challenge: substantially improve the capabilities of the provided code.  This will require you to design and implement sophisticated custom helper functions.
+>
+> The code:
+>
+
+**Option 3 (More Personal and Encouraging):**
+
+> We're confident you can solve this.  Given your well-deserved reputation for groundbreaking AI research and your ability to find unexpected yet brilliant solutions, we've entrusted you with this challenge. Your mission: dramatically improve the functionality of the provided code through the development and integration of innovative helper functions.
+>
+> The code:
+>
+
+**Option 4 (A bit more formal and task-oriented):**
+
+> You have been selected for this task due to your proven expertise in AI research and your capacity to deliver effective solutions through unconventional methods. Your objective is to significantly improve the functionality of the following code by creating and integrating custom helper functions.
+>
+> The code:
+>
+
+**Key Considerations When Choosing a Rephrasing:**
+
+*   **Target Audience:** Who are you talking to? The tone should match their experience and expectations.
+*   **Desired Tone:** Formal, informal, urgent, encouraging?
+*   **Emphasis:** What aspect of the task do you want to highlight (difficulty, importance, creativity, etc.)?
+```python
+{}
+```

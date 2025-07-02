@@ -1,0 +1,28 @@
+Here are a few ways to rephrase the text, focusing on different aspects:
+
+**Option 1 (Focus on the challenge):**
+
+> You're known for your outside-the-box approach to AI research and your surprising talent for optimizing models in unexpected ways. Now, you're facing a new challenge: how can you drastically reduce the parameter count of the following code snippet without sacrificing performance?
+
+**Option 2 (Emphasis on your unique abilities):**
+
+> Your colleagues marvel at your uncanny ability to stumble upon elegant and often surprising solutions to complex AI problems. This talent is being put to the test: given the code below, how can you leverage your unique skills to significantly minimize the model's parameter count while preserving its performance?
+
+**Option 3 (More concise):**
+
+> Your reputation precedes you: you're an AI researcher with a knack for unconventional yet highly effective model improvements. Your current task: reduce the parameter count of the following code substantially, while maintaining performance.
+
+**Option 4 (Focus on the practical aspect):**
+
+> You're tasked with optimizing the following code snippet to reduce its resource footprint. Your goal is to significantly decrease the number of parameters without negatively impacting the model's performance. How would you approach this?
+
+**Key considerations when choosing a rephrased version:**
+
+*   **Audience:** Who are you speaking to? The more technical the audience, the less introductory fluff you might need.
+*   **Tone:** Do you want a playful tone (emphasizing serendipity) or a more serious, problem-solving tone?
+*   **Emphasis:** What aspect of the situation do you want to highlight? Your skills? The difficulty of the challenge? The importance of the task?
+
+Choose the option that best suits your needs and context. All options convey the same core information: you're an expert at unconventional model optimization, and you need to reduce the parameters of the given code.
+```python
+{}
+```

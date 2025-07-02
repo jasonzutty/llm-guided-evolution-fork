@@ -1,0 +1,31 @@
+Here are alternative ways to ask "How can I improve the performance of this code snippet by adjusting its default parameters or hyperparameters?":
+
+**Broad Options:**
+
+*  What parameter or hyperparameter adjustments would boost this code's performance?
+*  How can I optimize this code through parameter and hyperparameter tuning?
+*  What's the best way to tune the parameters or hyperparameters of this code for better performance?
+
+**Exploration-Focused Options:**
+
+*  Which parameters or hyperparameters should I experiment with to potentially improve this code's performance?
+*  What are some key parameters or hyperparameters to investigate for optimizing this code snippet?
+
+**Problem-Focused Options:**
+
+*  Are any of the default parameters or hyperparameters negatively impacting the performance of this code?
+*  Could specific parameter or hyperparameter adjustments resolve performance issues in this code?
+
+**Concise Options:**
+
+*  Parameter/hyperparameter tuning tips for this code?
+*  How to improve this code's performance with parameter tuning?
+
+**Action-Oriented Option:**
+
+*  Which specific parameters or hyperparameters should I change, and to what values, to optimize the performance of this code? (Looking for *specific* recommendations)
+
+Remember to always reference the specific code in question to ensure clarity. Using phrases like "this code," "this snippet," or similar is crucial.
+```python
+{}
+```

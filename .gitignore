@@ -1,10 +1,39 @@
-sota/Data
-sota/PNPP
-sota/Point-Transformers
-__pycache__/
+# LLMGE Generated
 xXx*
 network_xXx*
-sota/ExquisiteNetV2/cifar-10-batches-py
 *.bmp
-build/
+slurm-*.out
+0/
+1/
+first_test/
+second_test/
+pointnet_test/
 tests/*/outputs
+results/
+weight/
+sota/Pointnet_Pointnet2_pytorch/models/llmge_models/
+
+# Conda Env
+geminikey.sh
+uv.lock
+.venv/
+
+# Datasets
+sota/ExquisiteNetV2/cifar-10-batches-py
+data/modelnet40_normal_resampled/
+sota/ExquisiteNetV2/cifar10/
+
+# Graphs
+llmge_graph.py
+plot.png
+
+# Miscellaneous
+todo.txt
+__pycache__/
+build/
+Miniconda3-latest-MacOSX-arm64.sh
+sota/Pointnet_Pointnet2_pytorch/log/classification/*
+!sota/Pointnet_Pointnet2_pytorch/log/classification/pointnet2_cls_ssg
+!sota/Pointnet_Pointnet2_pytorch/log/classification/pointnet2_msg_normals
+!sota/Pointnet_Pointnet2_pytorch/log/classification/pointnet2_ssg_wo_normals
+z-pointnet-test-slurms/

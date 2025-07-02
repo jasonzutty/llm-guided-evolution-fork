@@ -11,11 +11,12 @@ echo "launching LLM Guided Evolution"
 hostname
 # module load anaconda3/2020.07 2021.11
 module load cuda
-module load anaconda3
+
 export CUDA_VISIBLE_DEVICES=0
 
-conda activate llm_guided_env
-export LD_LIBRARY_PATH=~/.conda/envs/llm_guided_env/lib/python3.12/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH
-conda info
+# For this line create a file called geminikey.sh and in that file write 'export GEMINI_API_KEY="your-api-key-here(leave the double quotes, remove the single quotes)"'
+source geminikey.sh
 
-python run_improved.py first_test
+source .venv/bin/activate
+
+python run_improved.py pointnet_test

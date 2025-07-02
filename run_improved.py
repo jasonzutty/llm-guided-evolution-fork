@@ -19,7 +19,7 @@ def print_ancestry(data):
         print(f'gene: {gene}')
         print(f"\t{data[gene]['GENES']}")
         print(f"\t{data[gene]['MUTATE_TYPE']}")
-        
+
 def update_ancestry(gene_id_child, gene_id_parent, ancestry, mutation_type=None, gene_id_parent2=None):
     """
     Updates the ancestry data for a given child gene based on its parent(s).
@@ -85,11 +85,10 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
     mutation_type : str
         The type of mutation generated
     """
-
     if (PROB_EOT > np.random.uniform()) and (GEN_COUNT > 0):
         print("\t‣ EoT")
         top_gene = np.random.choice([x[0] for x in TOP_N_GENES])
-        parts_x = split_file(f"{SOTA_ROOT}/models/network_{top_gene}.py")
+        parts_x = split_file(f"{SOTA_ROOT}/models/llmge_models/{MODEL}_{top_gene}.py")
         parts_y = split_file(SEED_NETWORK)
         parts = [(x.strip(), y.strip(), idx) for idx, (x, y) in enumerate(zip(parts_x[1:], parts_y[1:]))]
         random.shuffle(parts)
@@ -117,9 +116,13 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
     return template_txt, mute_type
 
 
-def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
+
+"""
+Main Job Functions
+"""  
+def write_bash_script(input_filename_x=f'{SOTA_ROOT}/{SEED_NETWORK}',
                       input_filename_y=None,
-                      output_filename=f'{SOTA_ROOT}/models/network_x.py',
+                      output_filename=f'{SOTA_ROOT}/models/llmge_models/{MODEL}.py',
                       gpu='TeslaV100-PCIE-32GB',
                       python_file='src/llm_mutation.py', 
                       top_p=0.1, temperature=0.2,
@@ -127,7 +130,7 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
                      ):
     
     def fetch_gene(filepath):
-        return os.path.basename(filepath).replace('network_','').replace('.py','')
+        return os.path.basename(filepath).replace(f'{MODEL}_','').replace('.py','')
     
     global GLOBAL_DATA_ANCESTRY
     
@@ -206,6 +209,7 @@ def submit_bash(file_path, **kwargs):
 
     return successful_sub_flag, job_id, local_output
 
+
 def check_contents_for_error(contents):
     """
     Checks the output of a job for any signs of error.
@@ -226,8 +230,8 @@ def check_contents_for_error(contents):
         return True
     else:
         return None
-        
-def check4job_completion(job_id, local_output=None, check_interval=60, timeout=120): # 3600 * 3
+
+def check4job_completion(job_id, local_output=None, check_interval=60, timeout=120):
     """
     Check for the completion of a job by searching for its output file and scanning for errors.
 
@@ -276,6 +280,7 @@ def check4job_completion(job_id, local_output=None, check_interval=60, timeout=1
         time.sleep(check_interval)
         print(f'\t‣ Waiting on check4job_completion LLM job: {job_id} Time: {round(time.time() - start_time)}s', flush=True)
         
+        
 def generate_random_string(length=20):
     # Define the characters that can be used in the string
     characters = string.ascii_letters + string.digits
@@ -283,7 +288,8 @@ def generate_random_string(length=20):
     random_string = ''.join(random.choice(characters) for i in range(length))
     random_string = 'xXx'+random_string
     return random_string
-    
+
+
 def create_individual(container, temp_min=0.05, temp_max=0.4):
     box_print("Create Individual", print_bbox_len=60, new_line_end=False)
     out_dir = str(GENERATION)
@@ -293,8 +299,8 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
     # Assign a file path and name for the model creation bash
     file_path = os.path.join(out_dir, f'{gene_id}.sh')
     successful_sub_flag, job_id, local_output = submit_bash(file_path, 
-                                              input_filename_x=f'{SOTA_ROOT}/network.py',
-                                              output_filename =f'{SOTA_ROOT}/models/network_{gene_id}.py',
+                                              input_filename_x=f'{SOTA_ROOT}/models/{MODEL}.py',
+                                              output_filename =f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{gene_id}.py',
                                               gpu=LLM_GPU,
                                               python_file='src/llm_mutation.py', 
                                               top_p=0.1, temperature=temperature)
@@ -319,16 +325,11 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
         # print(f'Model Files for {gene_id} are Loaded') if job_done else print(f'Error Loading Model Files for {gene_id}', flush=True)
         
     return individual
-    
-def submit_run(gene_id):
-    def write_bash_script_py(gene_id, train_file='./sota/ExquisiteNetV2/train.py'):
-        if not MACOS:
-            tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -amp"
-        else:
-            tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -epoch 2"
 
-        # python_runline = f'python {train_file} -bs 216 -epoch 2 -network "models.network_{gene_id}" {tmp}'
-        python_runline = f'python {train_file} -bs 216 -network "models.network_{gene_id}" {tmp}'
+
+def submit_run(gene_id):
+    def write_bash_script_py(gene_id):
+        python_runline = PYTHON_RUNLINE.format(GENE_ID=gene_id)
         bash_script_content = PYTHON_BASH_SCRIPT_TEMPLATE.format(python_runline)
         return bash_script_content
 
@@ -368,20 +369,22 @@ def submit_run(gene_id):
     GLOBAL_DATA[gene_id]['local_output'] = local_output
     print(f'\t‣ Running py File for {gene_id}, {job_id}')
 
-
+    
 def evalModel(individual):
     gene_id = individual[0]
     # Initially, we don't have a fitness value
     return None
 
+
 def check4model2run(gene_id):
     # model_path = os.path.join(str(GENERATION), f'{gene_id}_model.txt')
     
-    print(f'Checking for: SOTA_ROOT ./models/network_{gene_id}.py')
-    model_path = f'{SOTA_ROOT}/models/network_{gene_id}.py'
+    print(f'Checking for: SOTA_ROOT ./models/llmge_models/{MODEL}_{gene_id}.py')
+    model_path = f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{gene_id}.py'
     if os.path.exists(model_path):
         if GLOBAL_DATA[gene_id]['status'] != 'running eval':
             submit_run(gene_id)
+            
             
 def check4results(gene_id):
     def check4error(gene_id):
@@ -430,10 +433,12 @@ def check4results(gene_id):
     else:
         # print('Job Has Not Finished Running Yet...', flush=True)
         pass
-    
-def check_and_update_fitness(population, timeout=3600*30, loop_delay=60*30):
-    """ 
-    This function submits jobs and then if submitted it checks for four possibilities.
+        
+
+def check_and_update_fitness(population, timeout=CUF_TIMEOUT, loop_delay=60*5):
+    # original timeout was 3600*30
+    # original loop_delay = 60*30
+    """ This function submits jobs and then if submitted it checks for four possibilities.
     
     timeout: (int): seconds until the model run is killed and assigned the max error
     loop_delay (int): seconds until iterating over the jobs
@@ -482,7 +487,15 @@ def check_and_update_fitness(population, timeout=3600*30, loop_delay=60*30):
                     fitness_tuple = GLOBAL_DATA[gene_id]['fitness']  # Implement this function
                     ind.fitness.values = fitness_tuple
                 elif time.time() - GLOBAL_DATA[gene_id]['start_time'] > timeout:
-                    print(f"Timeout for gene ID {gene_id}")
+                    #When the job times out, it also ends the evaluation once timeout has been exceeded
+                    print(f"Timeout for gene ID {gene_id}, terminating job")
+                    job_id = GLOBAL_DATA[gene_id].get("results_job", None)
+                    if job_id and job_id != "None":
+                        try:
+                            subprocess.run(["scancel", str(job_id)], check=True)
+                            print(f"\t⛔️ Killed SLURM job {job_id} for gene ID {gene_id}")
+                        except subprocess.CalledProcessError as e:
+                            print(f"\t⚠️ Failed to cancel SLURM job {job_id}: {e}") 
                     ind.fitness.values = INVALID_FITNESS_MAX 
                     GLOBAL_DATA[gene_id]['status'] = 'FAILED: TIMEOUT'
                 else:
@@ -502,6 +515,7 @@ def check_and_update_fitness(population, timeout=3600*30, loop_delay=60*30):
         time.sleep(loop_delay)  # Wait some time before checking again
         count+=1
         
+
 def update_individual(ind, new_gene_id, old_gene_id=None, process_success=True, process_type='Mutation'):
     """
     Update an individual based on the success or failure of a process.
@@ -543,6 +557,7 @@ def update_individual(ind, new_gene_id, old_gene_id=None, process_success=True, 
 
     return ind
 
+
 # TODO: I need to cycle through by the job id to match the sub order
 def delayed_mate_check(offspring):
     if DELAYED_CHECK is True:
@@ -573,6 +588,7 @@ def delayed_mate_check(offspring):
 
     return offspring
 
+
 def delayed_creation_check(offspring):
     if DELAYED_CHECK is True:
         for individual in offspring:
@@ -587,6 +603,7 @@ def delayed_creation_check(offspring):
                     job_done = check4job_completion(job_id)
                   
     return offspring
+
 
 def delayed_mutate_check(offspring):
     """
@@ -625,7 +642,9 @@ def delayed_mutate_check(offspring):
                                                    process_success=not failed_process, process_type='Mutation')
                   
     return offspring
-
+         
+    
+# Custom crossover function
 def customCrossover(ind1, ind2):
     def combine_elements(ind1, ind2, temp_min=0.05, temp_max=0.1):
         """
@@ -635,6 +654,7 @@ def customCrossover(ind1, ind2):
         Returns:
         str: The gene ID of the new individual.
         """
+        global GLOBAL_DATA
         out_dir = str(GENERATION)
         # Retrieve gene IDs from the individuals
         gene_id_1 = ind1[0]
@@ -647,9 +667,9 @@ def customCrossover(ind1, ind2):
         # Create the bash file for the new job
         file_path = os.path.join(out_dir, f'{new_gene_id}.sh')
         successful_sub_flag, job_id, local_output = submit_bash(file_path, 
-                                          input_filename_x=f'{SOTA_ROOT}/models/network_{gene_id_1}.py',
-                                          input_filename_y=f'{SOTA_ROOT}/models/network_{gene_id_2}.py',
-                                          output_filename=f'{SOTA_ROOT}/models/network_{new_gene_id}.py',
+                                          input_filename_x=f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{gene_id_1}.py',
+                                          input_filename_y=f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{gene_id_2}.py',
+                                          output_filename=f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{new_gene_id}.py',
                                           gpu=LLM_GPU,
                                           python_file='src/llm_crossover.py', 
                                           top_p=0.1, temperature=temperature)
@@ -673,7 +693,10 @@ def customCrossover(ind1, ind2):
         failed_process = True if (successful_sub_flag is False) or (job_done is False) else False
         # Return the new gene ID
         return new_gene_id, failed_process
-        
+    
+    global GLOBAL_DATA
+    global DELAYED_CHECK
+    
     new_gene_id1, failed_process1 = combine_elements(ind1, ind2)
     new_gene_id2, failed_process2 = combine_elements(ind2, ind1)
     
@@ -695,6 +718,7 @@ def customCrossover(ind1, ind2):
 
     return offspring1, offspring2
 
+
 def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     """
     Custom mutation function that randomly changes the temperature parameter of the individual's task and assigns a new ID.
@@ -711,9 +735,9 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     individual:
         The mutated individual
     """
-    
     # Check if mutation occurs (based on the mutation probability)
     # if random.random() < indpb: # TODO: connect this to temp
+    global DELAYED_CHECK
     out_dir = str(GENERATION)
     old_gene_id = individual[0]
     # Generate a new gene ID
@@ -723,8 +747,8 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     file_path = os.path.join(str(GENERATION), f'{new_gene_id}.sh')
     temperature = round(random.uniform(temp_min, temp_max), 2)
     successful_sub_flag, job_id, local_output = submit_bash(file_path, 
-                                              input_filename_x= f'{SOTA_ROOT}/models/network_{old_gene_id}.py',
-                                              output_filename = f'{SOTA_ROOT}/models/network_{new_gene_id}.py',
+                                              input_filename_x= f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{old_gene_id}.py',
+                                              output_filename = f'{SOTA_ROOT}/models/llmge_models/{MODEL}_{new_gene_id}.py',
                                               gpu=LLM_GPU,
                                               python_file='src/llm_mutation.py', 
                                               top_p=0.1, temperature=temperature)
@@ -755,7 +779,8 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     individual = update_individual(individual, new_gene_id, old_gene_id,
                                    process_success=(not failed_process), process_type='Mutation')
     return individual
-    
+
+
 def remove_duplicates(population):
     unique_individuals = []
     seen_chromosomes = set()
@@ -768,6 +793,7 @@ def remove_duplicates(population):
             seen_chromosomes.add(chromosome)
 
     return unique_individuals
+
 
 # --- Checkpoint Functions --- #
 def save_checkpoint(gen, folder_name="checkpoints"):
@@ -784,6 +810,7 @@ def save_checkpoint(gen, folder_name="checkpoints"):
         pickle.dump(checkpoint_data, file)
     print(f"Checkpoint saved as {filename}")
 
+    
 def load_checkpoint(folder_name="checkpoints", checkpoint_file=None):
     if not os.path.exists(folder_name):
         return None, None
@@ -802,17 +829,11 @@ def load_checkpoint(folder_name="checkpoints", checkpoint_file=None):
 
 def true_nsga2(pop, k):
     pop = tools.selNSGA2(pop, len(pop)) # 10 diff
+    k = k//4 * 4
+    if len(pop) < 10: #Added to handle cases when there are less than 10 valid individuals
+        pop = k * pop
     new_pop = tools.selTournamentDCD(pop, k) # mults of 4
     return new_pop
-
-# Error Handling 
-def createPopulation():
-    start_gen = 0
-    box_print("CREATING POPULATION FROM SEED CODE")
-    population = toolbox.population(n=start_population_size)
-    box_print("Batch Checking Created Genes", print_bbox_len=60, new_line_end=False)
-    delayed_creation_check(population)
-    hof = tools.HallOfFame(hof_size)
 
 # Define the problem
 creator.create("FitnessMulti", base.Fitness, weights=FITNESS_WEIGHTS)  # Adjust weights as needed
@@ -834,7 +855,19 @@ TOP_N_GENES = None
 LINKED_GENES = {}
 GLOBAL_DATA = {}
 GLOBAL_DATA_HIST = {}
-GLOBAL_DATA_ANCESTRY = {}
+GLOBAL_DATA_ANCESTERY = {}
+
+# Create Population 
+
+def createPopulation():
+    start_gen = 0
+    box_print("CREATING POPULATION FROM SEED CODE")
+    population = toolbox.population(n=start_population_size)
+    box_print("Batch Checking Created Genes", print_bbox_len=60, new_line_end=False)
+    delayed_creation_check(population)
+    hof = tools.HallOfFame(hof_size)
+
+
 # Main Evolution Loop
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Generation')
@@ -880,27 +913,21 @@ if __name__ == "__main__":
         box_print(f"Selection", print_bbox_len=60, new_line_end=False)
         # These bypass the mutation and cross-over so we dont lose them
         
-        # This Line right here is causing the error
-        # Add Condtional here to check population size
-        count = 0
-        for i in range(5):
-            if len(population) == 0:
+        for i in range (5):
+            if (len(population) == 0):
                 createPopulation()
             else:
                 break
-
+        
         if len(population) == 0:
             exit() 
-        
-        elites = tools.selSPEA2(population, num_elites)
 
+        elites = tools.selSPEA2(population, num_elites)
         # Select the next generation's parents
         offspring = toolbox.select(population, population_size)
-        
         print_population(offspring, GLOBAL_DATA)
         
         print([len(GLOBAL_DATA_HIST), len(GLOBAL_DATA), len(population), len(offspring)])
-        
         # Clone the selected individuals
         offspring = list(map(toolbox.clone, offspring))
         GLOBAL_DATA_HIST.update(GLOBAL_DATA.copy())

@@ -302,6 +302,8 @@ def mutate_prompts(n=5):
             llm_code_generator = submit_mixtral_hf
         elif LLM_MODEL == 'llama3':
             llm_code_generator = submit_llama3_hf
+        elif LLM_MODEL == 'gemini':
+            llm_code_generator = submit_gemini_api
         output = llm_code_generator(prompt, temperature=temp).strip()
         if "```" in output:
             output = output.split("```")[0]

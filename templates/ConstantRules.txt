@@ -4,5 +4,6 @@
 4. Retain original tensor input/output sizes.
 5. Provide full code.
 6. Must function with default settings.
+7. If the prompt asks for it to be unaltered then do not alter the code.
 
 A: Let us think step by step

@@ -2,32 +2,53 @@ import os
 import numpy as np
 import torch
 
-#: Root directory of the repository
-ROOT_DIR = "/home/hice1/jzutty3/llm-guided-evolution"
-#: DATA_PATH absolute or relative to ExquisiteNetV2
+
+MACOS = False
+RUNLINE_AMP = ''
+if torch.mps.is_available():
+	DEVICE = 'mps'
+	MACOS = True
+	RUNLINE_AMP = "-amp"
+elif torch.cuda.is_available():
+	DEVICE = 'cuda'
+else:
+	DEVICE = 'cpu'
+
+# Pointnet++ Implementation
+ROOT_DIR = "/home/hice1/htirumalai3/scratch/llm-guided-evolution-fork"
+# DATA_PATH absolute or relative to Pointnet++
+DATA_PATH = "/storage/ice-shared/vip-vvk/data/llm_ge_data/modelnet40_normal_resampled"
+SOTA_ROOT = os.path.join(ROOT_DIR, 'sota/Pointnet_Pointnet2_pytorch')
+SEED_NETWORK = os.path.join(SOTA_ROOT, "models/pointnet2_cls_ssg.py")
+MODEL = "pointnet2_cls_ssg"
+TRAIN_FILE = os.path.join(SOTA_ROOT, 'train_classification.py')
+PYTHON_RUNLINE = (
+    f'PYTHONPATH={SOTA_ROOT}/models/llmge_models:$PYTHONPATH '
+    f'python {TRAIN_FILE} --model "pointnet2_cls_ssg_{{GENE_ID}}" --log_dir "pointnet2_cls_ssg_{{GENE_ID}}"'
+)
+'''
+# ExquisiteNetV2 Implementation
+ROOT_DIR = "/home/hice1/htirumalai3/scratch/llm-guided-evolution-fork"
+# DATA_PATH absolute or relative to ExquisiteNetV2
 DATA_PATH = "./cifar10"
 #: Location where the current seed repo resides
 SOTA_ROOT = os.path.join(ROOT_DIR, 'sota/ExquisiteNetV2')
-#: Location where the network architecture for the seed resides
-SEED_NETWORK = os.path.join(SOTA_ROOT, "network.py")
-#: Whether to run llm-ge locally (True) or distribute across a slurm cluster  (False)
-LOCAL = True
+SEED_NETWORK = os.path.join(SOTA_ROOT, "models/network.py")
+MODEL = "network"
+TRAIN_FILE = os.path.join(SOTA_ROOT, "train.py")
+RUNLINE_TMP = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 {RUNLINE_AMP} -epoch 200"
+PYTHON_RUNLINE = (
+    f'python {TRAIN_FILE} -bs 216 -network "models.llmge_models.network_{{GENE_ID}}" {RUNLINE_TMP}'
+)
+'''
+
+LOCAL = False
 if LOCAL:
 	RUN_COMMAND = 'bash'
 	DELAYED_CHECK = False
 else: 
 	RUN_COMMAND = 'sbatch'
 	DELAYED_CHECK = True
-
-#: Whether host uses macOS (True) and should use mps, or not (False) and should use cpu or cuda depending on what is available
-MACOS = False
-if torch.mps.is_available():
-	DEVICE = 'mps'
-	MACOS = True
-elif torch.cuda.is_available():
-	DEVICE = 'cuda'
-else:
-	DEVICE = 'cpu'
 
 #LLM_MODEL = 'mixtral'
 #LLM_MODEL = 'llama3'
@@ -39,11 +60,10 @@ except:
 	GEMINI_API_KEY = ''
 # SEED_PACKAGE_DIR = "./sota/ExquisiteNetV2/divine_seed_module"
 
-# Evolution Constants/Params
-# --------------------------
-
-#: Tuple of fitness weights of length equal to the number of objectives.
-#: 1.0 indicates objective will be maximized, -1.0 for objective to by minimized.
+"""
+Evolution Constants/Params
+"""
+CUF_TIMEOUT = 10800
 FITNESS_WEIGHTS = (1.0, -1.0)
 INVALID_FITNESS_MAX = tuple([float(x*np.inf*-1) for x in FITNESS_WEIGHTS])
 # this is just a unique value
@@ -85,6 +105,7 @@ hof_size = 100
 QC_CHECK_BOOL = False
 #: Whether (True) or not (False) to submit LLM prompts remotely to sources such as hugging face.
 INFERENCE_SUBMISSION = True
+HUGGING_FACE_BOOL = False
 #LLM_GPU = 'NVIDIAA100-SXM4-80GB|NVIDIAA10080GBPCIe|TeslaV100-PCIE-32GB|QuadroRTX4000|GeForceGTX1080Ti|GeForceGTX1080|TeslaV100-PCIE-32GB|TeslaV100S-PCIE-32GB'
 #LLM_GPU = 'NVIDIAA100-SXM4-80GB|NVIDIAA10080GBPCIe|TeslaV100-PCIE-32GB|TeslaV100S-PCIE-32GB|NVIDIARTX6000AdaGeneration|NVIDIARTXA6000|NVIDIARTXA5000|NVIDIARTXA4000|GeForceGTX1080Ti|QuadroRTX4000|QuadroP4000|GeForceGTX1080|TeslaP4'
 #: If using slurm, this string will be used to request GPUs for the submission of prompts to the LLM.
@@ -105,10 +126,10 @@ hostname
 # Load GCC version 9.2.0
 # module load gcc/13.2.0
 module load cuda
-module load anaconda3
 # Activate Conda environment
-conda activate llm_guided_env
-export LD_LIBRARY_PATH=~/.conda/envs/llm_guided_env/lib/python3.12/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH
+# conda activate llm_guided_env
+# export LD_LIBRARY_PATH=~/.conda/envs/llm_guided_env/lib/python3.12/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH
+source activate .venv/bin/activate
 # conda info
 
 # Set the TOKENIZERS_PARALLELISM environment variable if needed
@@ -135,10 +156,10 @@ hostname
 # module load gcc/13.2.0
 # module load cuda/11.8
 module load cuda
-module load anaconda3
 # Activate Conda environment
-conda activate llm_guided_env
-export LD_LIBRARY_PATH=~/.conda/envs/llm_guided_env/lib/python3.12/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH
+# conda activate llm_guided_env
+# export LD_LIBRARY_PATH=~/.conda/envs/llm_guided_env/lib/python3.12/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH
+source activate .venv/bin/activate
 # conda info
 
 # Set the TOKENIZERS_PARALLELISM environment variable if needed

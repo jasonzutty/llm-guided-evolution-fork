@@ -1,0 +1,13 @@
+This document provides several alternative ways to ask the question "How can I improve the performance of this code by tweaking its parameters or hyperparameters?". It offers a range of options, from formal and technical to informal and direct, each designed to elicit different kinds of answers. The variations focus on identifying *unconventional* or *less commonly explored* modifications.
+
+Here's a summary of the key categories of rephrased questions:
+
+*   **Formal/Technical:** Emphasizes precise language and assumes a knowledgeable audience.
+*   **Informal/Direct:** Uses simpler language and encourages creative, potentially unconventional, suggestions.
+*   **Specificity-Focused:** Seeks detailed and justified recommendations for specific modifications.
+*   **General/Concise:** Provides a broad inquiry for general ideas about unusual modifications.
+
+The document concludes by highlighting factors to consider when choosing the best phrasing: the audience's technical understanding, the desired level of detail in the response, and the question's overall objective.  The goal is to select a question that effectively communicates the need for non-standard approaches to parameter/hyperparameter tuning for performance optimization.
+```python
+{}
+```

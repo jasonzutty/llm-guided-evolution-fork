@@ -22,6 +22,9 @@ ______
 This code utilizes [ExquisiteNetV2](https://github.com/shyhyawJou/ExquisiteNetV2) which is copied into the sota directory.
 
 Dependencies are managed through `pyproject.toml`. This package can be installed with `pip install .` or interacted with through tools such as `uv` 
+ - We recommend doing through 'uv' by doing 'uv sync'
+ - Then create a file called geminikey.sh to load in your key to run.sh by adding this line 'export GEMINI_API_KEY="your-api-key-here" '
+ - Then go to src/cfg/constants.py to replace the root directory with your own
 
 Then follow the instructions to prepare the CIFAR10 dataset in the [ExquisiteNetV2 README](./sota/ExquisiteNetV2/README.md)
 

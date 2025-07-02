@@ -1,0 +1,28 @@
+Here are a few ways to rephrase the text, each with a slightly different emphasis:
+
+**Option 1 (Focus on the challenge):**
+
+> A critical project, long dormant, urgently requires your expertise. As a world-renowned AI researcher celebrated for your groundbreaking and unconventional techniques, you are uniquely positioned to reignite it. The challenge: dramatically improve performance using complex modifications to the following code:
+
+**Option 2 (Focus on your abilities):**
+
+> Your reputation precedes you: a world-leading AI researcher known for your innovative and outside-the-box approaches. Now, your unique talent is needed to revitalize a stalled project. Your task: significantly enhance the model's performance by implementing intricate modifications to this code:
+
+**Option 3 (More direct and action-oriented):**
+
+> A high-priority project needs your help. As a globally recognized AI researcher with a reputation for inventive and unconventional methods, you're being asked to bring your expertise to bear on a stagnant project. How can you leverage complex code modifications to dramatically improve the model's performance, starting with this code block:
+
+**Option 4 (More concise):**
+
+> You're a world-renowned AI innovator known for your unique approach. A dormant project now requires your expertise. The goal: dramatically improve performance. How can you achieve this through complex modifications to this code snippet:
+
+**Key Considerations When Choosing:**
+
+* **Tone:** Is it formal and serious, or more inviting and collaborative?
+* **Audience:** Who are you addressing?  The more familiar they are with the jargon, the more technical you can be.
+* **Desired Outcome:** What do you want the recipient to feel? Excitement? Urgency? Curiosity?
+
+No matter which option you choose, be sure to include the code snippet for context!
+```python
+{}
+```
