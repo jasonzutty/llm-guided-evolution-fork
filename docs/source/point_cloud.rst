@@ -114,7 +114,7 @@ Overview
 This unique framework is based off of Morris, Jurado, and Zutty's research paper called, “The Automation of Models Advancing Models”. They were able to create a framework that uses LLMs with a layer of creativity to speed up the process of evolving ML models, specifically for ExquisiteNetV2.
 
 ExquisiteNetV2
-""""""""""""""
+""""""""""""uv run sphinx-autobuild docs/source docs/build/html --open-browser""
 Lightweight CNN designed for image classification, tested on 15 datasets \(CIFAR-10, MNIST\) with 518,230 parameters, achieving 99.71% accuracy on MNIST. 
 
 LLM-GE Codebase Structure
@@ -166,6 +166,6 @@ train-test data
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 3
+    :caption: Contents:
 

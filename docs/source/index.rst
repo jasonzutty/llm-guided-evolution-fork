@@ -10,12 +10,14 @@ Welcome to the documentation for Large Language Model \(LLM\) Guided Evolution \
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
-
+   
+   setting_up
    seed_algorithms
    point_cloud
    api
+   
 
 
 
