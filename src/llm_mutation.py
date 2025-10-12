@@ -14,9 +14,10 @@ from pathlib import Path
 
 
 def augment_network(input_filename='network.py', output_filename='network_x.py', template_txt=None,
-                    top_p=0.15, temperature=0.1, apply_quality_control=False, inference_submission=False):
+                    top_p=0.15, llm_model=LLM_DEEPSEEK, temperature=0.1, apply_quality_control=False):
     
     print(f'Loading {input_filename} code')
+    print('Using')
     parts = split_file(input_filename)
     augment_idx = np.random.randint(1, len(parts))
     # select code to be augmented randomly 
@@ -24,13 +25,19 @@ def augment_network(input_filename='network.py', output_filename='network_x.py',
     # prompt_templates = glob.glob(f'{ROOT_DIR}/templates/FixedPrompts/*/*.txt')
     # template_path = np.random.choice(prompt_templates)
     # template_path = f'{ROOT_DIR}/templates/{fname}'
-    fname = template_txt
+
+    fname = os.path.join(ROOT_DIR, template_txt)
     with open(fname, 'r') as file:
         template_txt = file.read()
+    
     # add code to be augmented 
     txt2llm = template_txt.format(code2llm.strip())
     code_from_llm = generate_augmented_code(txt2llm, augment_idx-1, apply_quality_control,
-                                            top_p, temperature, inference_submission=inference_submission)
+                                            top_p, llm_model, temperature)
+    
+    if not code_from_llm:
+        code_from_llm = txt2llm
+
     note_txt = extract_note(code2llm)
     parts[augment_idx] = f"\n{note_txt}{code_from_llm}\n"
     # prompt_log = f'# Parent Prompt: {template_path} Root Code: {input_filename}\n'
@@ -54,20 +61,21 @@ if __name__ == "__main__":
     parser.add_argument('input_filename', type=str, help='Input file name')
     parser.add_argument('output_filename', type=str, help='Output file name')
     parser.add_argument('template_txt', type=str, help='Template txt')
+    parser.add_argument('--llm_model', type=str, default=False, help='LLM Model Name')
     parser.add_argument('--top_p', type=float, default=0.15, help='Top P value for text generation')
     parser.add_argument('--temperature', type=float, default=0.1, help='Temperature value for text generation')
     parser.add_argument('--apply_quality_control', type=str2bool, default=False, help='Use LLM QC')
-    parser.add_argument('--inference_submission', type=str2bool, default=False, help='True to submit for inference remotely')
 
     # Parse the arguments
     args = parser.parse_args()
+    
 
     # Call the function with the parsed arguments
     augment_network(input_filename=args.input_filename,
                     output_filename=args.output_filename,
                     template_txt=args.template_txt,
+                    llm_model=args.llm_model,
                     top_p=args.top_p, 
                     temperature=args.temperature,
                     apply_quality_control=args.apply_quality_control,
-                    inference_submission=args.inference_submission,
                    )

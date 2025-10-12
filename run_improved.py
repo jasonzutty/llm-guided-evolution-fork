@@ -10,6 +10,7 @@ import subprocess
 import numpy as np
 from deap import base, creator, tools
 from deap.tools import HallOfFame
+from functools import partial
 from src.utils.print_utils import print_population, print_scores, box_print, print_job_info
 from src.llm_utils import split_file, retrieve_base_code, mutate_prompts
 from src.cfg.constants import *
@@ -59,7 +60,7 @@ def update_ancestry(gene_id_child, gene_id_parent, ancestry, mutation_type=None,
     return ancestry
 
 
-def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK, ROOT_DIR):
+def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK, ROOT_DIR, llm_model):
     """
     Generates a template based on given probabilities and gene information.
     
@@ -86,7 +87,7 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
         The type of mutation generated
     """
 
-    if (PROB_EOT > np.random.uniform()) and (GEN_COUNT > 0):
+    if (PROB_EOT > np.random.uniform()) and (GEN_COUNT > 5):
         print("\t‣ EoT")
         top_gene = np.random.choice([x[0] for x in TOP_N_GENES])
         parts_x = split_file(f"{SOTA_ROOT}/models/network_{top_gene}.py")
@@ -104,8 +105,8 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
         template_txt = eot_template_txt.format(x, y, "{}")
         mute_type = "EoT"
     else:
-        print("\t‣ FixedPrompts")
-        prompt_templates = glob.glob(f'{ROOT_DIR}/templates/FixedPrompts/*/*.txt')
+        print("\t‣ Normal Prompts")
+        prompt_templates = glob.glob(f'{ROOT_DIR}/{PROMPTS}')
         template_path = np.random.choice(prompt_templates)
         mute_type = os.path.basename(template_path).split('.')[0]  # Assuming the file extension needs to be removed
         with open(template_path, 'r') as file:
@@ -113,19 +114,20 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
         with open(f'{ROOT_DIR}/templates/ConstantRules.txt', 'r') as file:
             rules_txt = file.read()
         template_txt = f'{template_txt}\n{rules_txt}'
-
     return template_txt, mute_type
 
 
-def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
+def write_bash_script(llm_model,
+                      job_name,
+                      input_filename_x=f'{SOTA_ROOT}/network.py',
                       input_filename_y=None,
                       output_filename=f'{SOTA_ROOT}/models/network_x.py',
-                      gpu='TeslaV100-PCIE-32GB',
                       python_file='src/llm_mutation.py', 
                       top_p=0.1, temperature=0.2,
-                     
                      ):
     
+    print("WRITING write_bash_script, llm_model: ", llm_model)
+
     def fetch_gene(filepath):
         return os.path.basename(filepath).replace('network_','').replace('.py','')
     
@@ -142,7 +144,7 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
     gene_id_child = fetch_gene(output_filename)
     if python_file=='src/llm_mutation.py':
         template_txt, mute_type = generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, 
-                                                    SOTA_ROOT, SEED_NETWORK, ROOT_DIR)
+                                                    SOTA_ROOT, SEED_NETWORK, ROOT_DIR, llm_model)
         if GEN_COUNT >= 0: # this does not need to happen at creation of population
             GLOBAL_DATA_ANCESTRY = update_ancestry(gene_id_child, gene_id_parent, GLOBAL_DATA_ANCESTRY, 
                                                     mutation_type=mute_type, gene_id_parent2=None)
@@ -154,7 +156,7 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
             file.write(template_txt)
             
         temp_text = f'{python_file} {input_filename_x} {output_filename} {file_path} --top_p {top_p} --temperature {temperature}'
-        python_runline = f"python {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --inference_submission {INFERENCE_SUBMISSION}"
+        python_runline = f"python {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --llm_model {llm_model}"
         
     elif python_file=='src/llm_crossover.py':
         gene_id_parent2 = fetch_gene(input_filename_y)
@@ -162,11 +164,11 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
                                                 mutation_type=None, gene_id_parent2=gene_id_parent2)
         
         temp_text = f"{python_file} {input_filename_x} {input_filename_y} {output_filename} --top_p {top_p} --temperature {temperature}"
-        python_runline = f"python {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --inference_submission {INFERENCE_SUBMISSION}"
+        python_runline = f"python {temp_text} --apply_quality_control '{QC_CHECK_BOOL}' --llm_model {llm_model}"
     else:
         raise ValueError("Invalid python_file argument")
 
-    bash_script_content = LLM_BASH_SCRIPT_TEMPLATE.format(gpu, python_runline)
+    bash_script_content = LLM_BASH_SCRIPT_TEMPLATE.format(job_name, LLM_GPU, python_runline)
     return bash_script_content
 
 def create_bash_file(file_path, **kwargs):
@@ -227,7 +229,7 @@ def check_contents_for_error(contents):
     else:
         return None
         
-def check4job_completion(job_id, local_output=None, check_interval=60, timeout=120): # 3600 * 3
+def check4job_completion(job_id, local_output=None, check_interval=60, timeout=3600*30, extension=""):
     """
     Check for the completion of a job by searching for its output file and scanning for errors.
 
@@ -254,7 +256,7 @@ def check4job_completion(job_id, local_output=None, check_interval=60, timeout=1
             return state
 
     start_time = time.time()
-    output_file = f'slurm-{job_id}.out'
+    output_file = f'{SLURM_OUTPUT_PATH}{extension}slurm-{job_id}.out'
 
     while True:
         # Check if the timeout is reached
@@ -274,7 +276,7 @@ def check4job_completion(job_id, local_output=None, check_interval=60, timeout=1
 
         # Wait for some time before checking again
         time.sleep(check_interval)
-        print(f'\t‣ Waiting on check4job_completion LLM job: {job_id} Time: {round(time.time() - start_time)}s', flush=True)
+        print(f'\t‣ Waiting on check4job_completion LLM job: {job_id} Time: {round(time.time() - start_time)}s Path: {output_file}', flush=True)
         
 def generate_random_string(length=20):
     # Define the characters that can be used in the string
@@ -284,7 +286,7 @@ def generate_random_string(length=20):
     random_string = 'xXx'+random_string
     return random_string
     
-def create_individual(container, temp_min=0.05, temp_max=0.4):
+def create_individual(container, llm_model, temp_min=0.05, temp_max=0.4):
     box_print("Create Individual", print_bbox_len=60, new_line_end=False)
     out_dir = str(GENERATION)
     gene_id = generate_random_string(length=24)
@@ -295,8 +297,9 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
     successful_sub_flag, job_id, local_output = submit_bash(file_path, 
                                               input_filename_x=f'{SOTA_ROOT}/network.py',
                                               output_filename =f'{SOTA_ROOT}/models/network_{gene_id}.py',
-                                              gpu=LLM_GPU,
-                                              python_file='src/llm_mutation.py', 
+                                              python_file='src/llm_mutation.py',
+                                              llm_model=llm_model,
+                                              job_name="create_individual",
                                               top_p=0.1, temperature=temperature)
     # Log data
     GLOBAL_DATA[gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id, 
@@ -315,11 +318,11 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
             print(f'Checking for Job Completion: {job_id} for {gene_id}', flush=True)
         else:
             print(f'Checking completion for {gene_id}', flush=True)
-        job_done = check4job_completion(job_id=job_id, local_output=local_output)
+        job_done = check4job_completion(job_id=job_id, local_output=local_output, extension="evolution/")
         # print(f'Model Files for {gene_id} are Loaded') if job_done else print(f'Error Loading Model Files for {gene_id}', flush=True)
         
     return individual
-    
+
 def submit_run(gene_id):
     def write_bash_script_py(gene_id, train_file='./sota/ExquisiteNetV2/train.py'):
         if not MACOS:
@@ -329,7 +332,7 @@ def submit_run(gene_id):
 
         # python_runline = f'python {train_file} -bs 216 -epoch 2 -network "models.network_{gene_id}" {tmp}'
         python_runline = f'python {train_file} -bs 216 -network "models.network_{gene_id}" {tmp}'
-        bash_script_content = PYTHON_BASH_SCRIPT_TEMPLATE.format(python_runline)
+        bash_script_content = PYTHON_BASH_SCRIPT_TEMPLATE.format(LLM_GPU, python_runline)
         return bash_script_content
 
     # This is for subbing the python code
@@ -394,7 +397,8 @@ def check4results(gene_id):
             else:
                 return state
         # there is no local output, so process with slurm
-        output_file = f'slurm-{job_id}.out'
+        output_file = f'{SLURM_OUTPUT_PATH}evaluation/slurm-{job_id}.out'
+        print(f"Checked Path: {output_file}")
         # Check if the output file exists
         if os.path.exists(output_file):
             with open(output_file, 'r') as file:
@@ -431,7 +435,7 @@ def check4results(gene_id):
         # print('Job Has Not Finished Running Yet...', flush=True)
         pass
     
-def check_and_update_fitness(population, timeout=3600*30, loop_delay=60*30):
+def check_and_update_fitness(population, timeout=3600*30, loop_delay=60):
     """ 
     This function submits jobs and then if submitted it checks for four possibilities.
     
@@ -554,7 +558,7 @@ def delayed_mate_check(offspring):
                 new_gene_id, job_id = k, GLOBAL_DATA[k]["job_id"]
                 print(f'Delayed Mating Check: {new_gene_id}, LLM Job ID: {job_id}')
                 print(f'\t‣ Checking for Crossover Job Completion: {job_id} for {new_gene_id}')
-                job_done = check4job_completion(job_id)
+                job_done = check4job_completion(job_id, extension="evolution/")
 
                 if job_done:
                     print(f'\t‣ Model Files for {new_gene_id} are Loaded', flush=True) 
@@ -584,7 +588,7 @@ def delayed_creation_check(offspring):
                     gene_id = k
                     job_id = GLOBAL_DATA[k]["job_id"]
                     print(f'Checking for Job Completion: {job_id} for {gene_id}', flush=True)
-                    job_done = check4job_completion(job_id)
+                    job_done = check4job_completion(job_id, extension="evolution/")
                   
     return offspring
 
@@ -613,7 +617,7 @@ def delayed_mutate_check(offspring):
                     job_id = GLOBAL_DATA[k]["job_id"]
                     print(f'Delayed Mutation Check: {new_gene_id}, LLM Job ID: {job_id}', flush=True)
                     print(f'\t‣ Checking for Creation Job Completion: {job_id} for {new_gene_id}')
-                    job_done = check4job_completion(job_id)
+                    job_done = check4job_completion(job_id, extension="evolution/")
                     if job_done:
                         print(f'\t‣ Model Files for {new_gene_id} are Loaded') 
                     else: 
@@ -626,8 +630,8 @@ def delayed_mutate_check(offspring):
                   
     return offspring
 
-def customCrossover(ind1, ind2):
-    def combine_elements(ind1, ind2, temp_min=0.05, temp_max=0.1):
+def customCrossover(ind1, ind2, llm_model):
+    def combine_elements(ind1, ind2, llm_model, temp_min=0.05, temp_max=0.1):
         """
         Combine elements of two individuals to create a new individual.
         Parameters:
@@ -635,6 +639,7 @@ def customCrossover(ind1, ind2):
         Returns:
         str: The gene ID of the new individual.
         """
+        global GLOBAL_DATA
         out_dir = str(GENERATION)
         # Retrieve gene IDs from the individuals
         gene_id_1 = ind1[0]
@@ -650,9 +655,9 @@ def customCrossover(ind1, ind2):
                                           input_filename_x=f'{SOTA_ROOT}/models/network_{gene_id_1}.py',
                                           input_filename_y=f'{SOTA_ROOT}/models/network_{gene_id_2}.py',
                                           output_filename=f'{SOTA_ROOT}/models/network_{new_gene_id}.py',
-                                          gpu=LLM_GPU,
-                                          python_file='src/llm_crossover.py', 
-                                          top_p=0.1, temperature=temperature)
+                                          python_file='src/llm_crossover.py',
+                                          job_name="crossover_operation",
+                                          top_p=0.1, llm_model=llm_model, temperature=temperature)
 
         # Update global data for the new individual
         GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id, 
@@ -664,7 +669,7 @@ def customCrossover(ind1, ind2):
         
         if successful_sub_flag:
             print(f'\t‣ Checking for Crossover Job Completion: {job_id} for {new_gene_id}')
-            job_done = check4job_completion(job_id, local_output)
+            job_done = check4job_completion(job_id, local_output, extension="evolution/")
             if job_done:
                 print(f'\t‣ Model Files for {new_gene_id} are Loaded')
             else: 
@@ -673,9 +678,12 @@ def customCrossover(ind1, ind2):
         failed_process = True if (successful_sub_flag is False) or (job_done is False) else False
         # Return the new gene ID
         return new_gene_id, failed_process
-        
-    new_gene_id1, failed_process1 = combine_elements(ind1, ind2)
-    new_gene_id2, failed_process2 = combine_elements(ind2, ind1)
+    
+    global GLOBAL_DATA
+    global DELAYED_CHECK
+
+    new_gene_id1, failed_process1 = combine_elements(ind1, ind2, llm_model)
+    new_gene_id2, failed_process2 = combine_elements(ind2, ind1, llm_model)
     
     if DELAYED_CHECK:
         LINKED_GENES[new_gene_id1] = ind1[0]
@@ -695,7 +703,7 @@ def customCrossover(ind1, ind2):
 
     return offspring1, offspring2
 
-def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
+def customMutation(individual, llm_model, indpb, temp_min=0.02, temp_max=0.35):
     """
     Custom mutation function that randomly changes the temperature parameter of the individual's task and assigns a new ID.
 
@@ -711,23 +719,25 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     individual:
         The mutated individual
     """
-    
+    print('customMutation, llm_model:', llm_model)
+
+    global DELAYED_CHECK
     # Check if mutation occurs (based on the mutation probability)
     # if random.random() < indpb: # TODO: connect this to temp
     out_dir = str(GENERATION)
     old_gene_id = individual[0]
     # Generate a new gene ID
     new_gene_id = generate_random_string(length=24)
-    print(f'Mutating: {old_gene_id} and Replaceing with: {new_gene_id}')
+    print(f'Mutating: {old_gene_id} and Replacing with: {new_gene_id}')
     # Name of the sh bash file
     file_path = os.path.join(str(GENERATION), f'{new_gene_id}.sh')
     temperature = round(random.uniform(temp_min, temp_max), 2)
     successful_sub_flag, job_id, local_output = submit_bash(file_path, 
                                               input_filename_x= f'{SOTA_ROOT}/models/network_{old_gene_id}.py',
                                               output_filename = f'{SOTA_ROOT}/models/network_{new_gene_id}.py',
-                                              gpu=LLM_GPU,
-                                              python_file='src/llm_mutation.py', 
-                                              top_p=0.1, temperature=temperature)
+                                              python_file='src/llm_mutation.py',
+                                              job_name="mutation_operation",
+                                              top_p=0.1, llm_model=llm_model, temperature=temperature)
     
     # Update the individual with the new gene ID
     # individual[0] = new_gene_id
@@ -744,7 +754,7 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     
     if successful_sub_flag:
         print(f'\t‣ Checking for Mutation Job Completion: {job_id} for {new_gene_id}')
-        job_done = check4job_completion(job_id, local_output)
+        job_done = check4job_completion(job_id, local_output, extension="evolution/")
         if job_done:
             print(f'\t‣ Model Files for {new_gene_id} are Loaded')
         else: 
@@ -770,25 +780,59 @@ def remove_duplicates(population):
     return unique_individuals
 
 # --- Checkpoint Functions --- #
-def save_checkpoint(gen, folder_name="checkpoints"):
+def save_checkpoint(gen, folder_name="checkpoints", global_path=None, checkpoint_data=None):
     os.makedirs(folder_name, exist_ok=True)
-    checkpoint_data = {
-        "GLOBAL_DATA": GLOBAL_DATA,
-        "GLOBAL_DATA_HIST": GLOBAL_DATA_HIST,
-        "population": population,
-        "hof": hof,
-        "GLOBAL_DATA_ANCESTRY":GLOBAL_DATA_ANCESTRY,
-    }
+
+    if global_path is not None:
+        os.makedirs(global_path, exist_ok=True)
+        global_file = os.path.join(global_path, f'global_gen_{gen}.pkl')
+        if os.path.exists(global_file):
+            with open(global_file, "rb") as file:
+                try:
+                    stored_global_data = pickle.load(file)
+                except EOFError:
+                    stored_global_data = {}  
+        else:
+            stored_global_data = {}
+
+
+        print("ASSIGNING STORED GLOBAL DATA")
+
+        if stored_global_data:
+            print("Global data found, updating to file")
+            stored_global_data["GLOBAL_DATA"].update(GLOBAL_DATA)
+            stored_global_data["GLOBAL_DATA_HIST"].update(GLOBAL_DATA_HIST)
+            stored_global_data["GLOBAL_DATA_ANCESTRY"].update(GLOBAL_DATA_ANCESTRY)
+        else:
+            print("No global data found, saving to a new file")
+            stored_global_data = {
+                "GLOBAL_DATA": GLOBAL_DATA,
+                "GLOBAL_DATA_HIST": GLOBAL_DATA_HIST,
+                "GLOBAL_DATA_ANCESTRY": GLOBAL_DATA_ANCESTRY
+            }
+
+        with open(global_file, 'wb') as file:
+            pickle.dump(stored_global_data, file)
+        print(f'Global data saved as {global_file}')
+
+    if checkpoint_data is None:
+        checkpoint_data = {
+            "population": population,
+            "hof": hof, 
+        }
     filename = os.path.join(folder_name, f'checkpoint_gen_{gen}.pkl')
     with open(filename, 'wb') as file:
         pickle.dump(checkpoint_data, file)
-    print(f"Checkpoint saved as {filename}")
+    print(f"Population data saved as {filename}")
+
+def extract_generation(filename):
+    return int(filename.split('_')[2].split('.')[0])
 
 def load_checkpoint(folder_name="checkpoints", checkpoint_file=None):
     if not os.path.exists(folder_name):
         return None, None
     if checkpoint_file is None:
-        checkpoint_files = sorted(os.listdir(folder_name), reverse=True)
+        checkpoint_files = sorted(os.listdir(folder_name), key=extract_generation, reverse=True)
         checkpoint_file = checkpoint_files[0] if checkpoint_files else None
     if checkpoint_file:
         filepath = os.path.join(folder_name, checkpoint_file)
@@ -800,19 +844,43 @@ def load_checkpoint(folder_name="checkpoints", checkpoint_file=None):
         return checkpoint_data, start_gen
     return None, None
 
+def load_checkpoint(folder_name="checkpoints", checkpoint_file=None, global_path="checkpoints", global_file=None):
+    if not os.path.exists(folder_name) or not os.path.exists(global_path):
+        print("Path does not exist, returning none for checkpoints")
+        return None, None, None
+    population_data = []
+    start_gen = 0
+    global_data = {}
+    if checkpoint_file is None:
+        checkpoint_files = sorted(os.listdir(folder_name), key=extract_generation, reverse=True)
+        checkpoint_file = checkpoint_files[0] if checkpoint_files else None
+    if checkpoint_file:
+        filepath = os.path.join(folder_name, checkpoint_file)
+        with open(filepath, 'rb') as file:
+            population_data = pickle.load(file)
+        print(f"Loaded population data from {filepath}")
+        start_gen = int(checkpoint_file.split('_')[2].split('.')[0])
+        start_gen = start_gen + 1
+    
+    if global_file is None:
+        global_files = sorted(os.listdir(global_path), key=extract_generation, reverse=True)
+        global_file = global_files[0] if global_files else None
+    if global_file:
+        filepath = os.path.join(global_path, global_file)
+        with open(filepath, 'rb') as file:
+            global_data = pickle.load(file)
+        print(f"Loaded global data from {filepath}")
+
+    return population_data, start_gen, global_data
+
 def true_nsga2(pop, k):
     pop = tools.selNSGA2(pop, len(pop)) # 10 diff
     new_pop = tools.selTournamentDCD(pop, k) # mults of 4
     return new_pop
 
-# Error Handling 
-def createPopulation():
-    start_gen = 0
-    box_print("CREATING POPULATION FROM SEED CODE")
-    population = toolbox.population(n=start_population_size)
-    box_print("Batch Checking Created Genes", print_bbox_len=60, new_line_end=False)
-    delayed_creation_check(population)
-    hof = tools.HallOfFame(hof_size)
+def create_population(n, llm_model):
+    individual_func = partial(toolbox.individual, llm_model=llm_model)
+    return tools.initRepeat(list, individual_func, n)
 
 # Define the problem
 creator.create("FitnessMulti", base.Fitness, weights=FITNESS_WEIGHTS)  # Adjust weights as needed
@@ -821,7 +889,7 @@ creator.create("Individual", list, fitness=creator.FitnessMulti, file_id=None)
 # Initialize the toolbox
 toolbox = base.Toolbox()
 toolbox.register("individual", create_individual, creator.Individual)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+toolbox.register("population", create_population)
 toolbox.register("evaluate", evalModel)
 toolbox.register("mate", customCrossover)
 toolbox.register("mutate", customMutation, indpb=0.2)
@@ -840,22 +908,32 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Generation')
     # Add arguments
     parser.add_argument('checkpoints', type=str, help='Save Dir')
+    parser.add_argument('--llm_model', type=str, help='Which LLM to use', default=LLM_MIXTRAL)
+    parser.add_argument('--global_path', type=str, help='Path to global variables', default=ROOT_DIR)
     # Parse the arguments
     args = parser.parse_args()
+    llm_model = args.llm_model
+
     print(DNA_TXT)
-    checkpoint, start_gen = load_checkpoint(folder_name=args.checkpoints)
-    if checkpoint:
-        box_print("LOADING CHECKPOINT")
-        GLOBAL_DATA = checkpoint["GLOBAL_DATA"]
-        GLOBAL_DATA_HIST = checkpoint["GLOBAL_DATA_HIST"]
-        GLOBAL_DATA_ANCESTRY = checkpoint["GLOBAL_DATA_ANCESTRY"]
-        population = checkpoint["population"]
-        hof = checkpoint["hof"]
+    print("ISLAND llm_model: ", llm_model)
+
+    if not llm_model or llm_model not in ISLAND_LLMS:
+        print("Error in Island Generation: No LLM specified. Exiting script")
+        exit(1)
+
+    population_data, start_gen, global_data = load_checkpoint(folder_name=args.checkpoints, global_path=args.global_path)
+    if population_data:
+        box_print("CHECKPOINT LOADED")
+        GLOBAL_DATA = global_data["GLOBAL_DATA"]
+        GLOBAL_DATA_HIST = global_data["GLOBAL_DATA_HIST"]
+        GLOBAL_DATA_ANCESTRY = global_data["GLOBAL_DATA_ANCESTRY"]
+        population = population_data["population"]
+        hof = population_data["hof"]
     else:
         # Create an initial population
-        start_gen = 0
+        start_gen = 1
         box_print("CREATING POPULATION FROM SEED CODE")
-        population = toolbox.population(n=start_population_size)
+        population = toolbox.population(n=start_population_size, llm_model=llm_model)
         box_print("Batch Checking Created Genes", print_bbox_len=60, new_line_end=False)
         delayed_creation_check(population)
         hof = tools.HallOfFame(hof_size)
@@ -867,7 +945,7 @@ if __name__ == "__main__":
     check_and_update_fitness(population)
     # print_ancestry(GLOBAL_DATA_ANCESTRY)
     # Evolution
-    for gen in range(start_gen, num_generations):
+    for gen in range(start_gen, num_generations if migration_gen == 0 else ((start_gen + migration_gen - 1) // migration_gen) * migration_gen + 1):
         GEN_COUNT = gen
         TOP_N_GENES = tools.selSPEA2(population, NUM_EOT_ELITES)
         box_print(f"STARTING GENERATION: {gen}", new_line_end=False)
@@ -875,27 +953,44 @@ if __name__ == "__main__":
         box_print(f"Invalid Removal", print_bbox_len=60, new_line_end=False)
         # Remove individuals with placeholder fitness
         population = [ind for ind in population if ind.fitness.values != INVALID_FITNESS_MAX]
+
+        '''
+        IF POPULATION IS LESS THAN NUM_ELITE INDIVIDUALS, GENERATE MORE FROM SCRATCH
+         * todo: clean up this code/consolidate with previous code *
+        '''
+
+        box_print("CURRENT POPULATION SIZE:", len(population))
+        while len(population) < num_elites:
+            print("MINIMUM NUMBER OF IND NOT ACHIEVED, TRYING AGAIN")
+            GEN_COUNT = -1
+            TOP_N_GENES = None
+            LINKED_GENES = {}
+            GLOBAL_DATA = {}
+            GLOBAL_DATA_HIST = {}
+            GLOBAL_DATA_ANCESTRY = {}
+            start_gen = 0
+            population = toolbox.population(n=start_population_size, llm_model=llm_model)
+            delayed_creation_check(population)
+            for ind in population:
+                ind.fitness.values = PLACEHOLDER_FITNESS
+            check_and_update_fitness(population)
+            population = [ind for ind in population if ind.fitness.values != INVALID_FITNESS_MAX]
+            box_print("CURRENT POPULATION SIZE:", len(population))
+
         print_population(population, GLOBAL_DATA)
         # Select the next generation's parents
         box_print(f"Selection", print_bbox_len=60, new_line_end=False)
         # These bypass the mutation and cross-over so we dont lose them
-        
-        # This Line right here is causing the error
-        # Add Condtional here to check population size
-        count = 0
-        for i in range(5):
-            if len(population) == 0:
-                createPopulation()
-            else:
-                break
 
-        if len(population) == 0:
-            exit() 
-        
         elites = tools.selSPEA2(population, num_elites)
-
+        
         # Select the next generation's parents
-        offspring = toolbox.select(population, population_size)
+        if len(population) < population_size:
+            print(f"Selecting {len(population)} offspring")
+            offspring = toolbox.select(population, len(population) - (len(population) % 4))
+        else:
+            print(f"Selecting {population_size} offspring")
+            offspring = toolbox.select(population, population_size)
         
         print_population(offspring, GLOBAL_DATA)
         
@@ -911,7 +1006,7 @@ if __name__ == "__main__":
         box_print("Mating", print_bbox_len=60, new_line_end=False)
         for child1, child2 in zip(offspring[::2], offspring[1::2]):
             if random.random() < crossover_probability:
-                child1, child2 = toolbox.mate(child1, child2)
+                child1, child2 = toolbox.mate(child1, child2, llm_model=llm_model)
                 del child1.fitness.values
                 del child2.fitness.values 
                 
@@ -926,7 +1021,7 @@ if __name__ == "__main__":
         box_print("Mutating", print_bbox_len=60, new_line_end=False)
         for mutant in offspring:
             if random.random() < mutation_probability:
-                toolbox.mutate(mutant)
+                toolbox.mutate(individual=mutant, llm_model=llm_model)
                 del mutant.fitness.values
                 
         box_print(f"GLOBAL_DATA_ANCESTRY", new_line_end=False)
@@ -967,12 +1062,14 @@ if __name__ == "__main__":
         # Gather all the fitnesses in one list and print the stats
         print_scores(population, FITNESS_WEIGHTS)
         hof.update(population)
-        save_checkpoint(gen, folder_name=args.checkpoints)
+        save_checkpoint(gen, folder_name=args.checkpoints, global_path=args.global_path)
         LINKED_GENES = {}
         # mutate x prompts
-        mutate_prompts()
+        # mutate_prompts()
+
+        best_ind = tools.selBest(population, 1)[0]
+        print(f"Finished Generation {gen}")
+        print(f"Best Individual: {best_ind}")
+        print(f"Best Fitness: {best_ind.fitness.values}")
         
-    print("-- End of Evolution --")
-    best_ind = tools.selBest(population, 1)[0]
-    print(f"Best Individual: {best_ind}")
-    print(f"Best Fitness: {best_ind.fitness.values}")
+    print("-- End of Era --")

@@ -14,9 +14,9 @@
       check4results
       check_and_update_fitness
       check_contents_for_error
-      createPopulation
       create_bash_file
       create_individual
+      create_population
       customCrossover
       customMutation
       delayed_creation_check
@@ -47,4 +47,5 @@
    .. autosummary::
    
       HallOfFame
+      partial
    
