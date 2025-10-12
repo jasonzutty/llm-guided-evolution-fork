@@ -1,0 +1,9 @@
+[submodule "point-cloud-integration"]
+	path = point-cloud-integration
+	url = https://github.com/htirumalai/llm-guided-evolution-fork.git
+[submodule "island-migration"]
+	path = island-migration
+	url = https://github.com/heuryn/llm-guided-evolution-Island-Migration.git
+[submodule "object-detection"]
+	path = object-detection
+	url = https://github.com/Jer-Bear124/llm-guided-evolution.git
