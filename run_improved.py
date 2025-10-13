@@ -125,6 +125,18 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
                       top_p=0.1, temperature=0.2,
                      
                      ):
+    """
+    Create a Bash command string that can be written into a .sh script and executed on GPU clusters
+
+    Args:
+        input_filename_x (str): Path to the first parent model. Defaults to f'{SOTA_ROOT}/network.py'.
+        input_filename_y (str): Path to the second parent model. Defaults to None.
+        output_filename (str): Where the child network will be saved. Defaults to f'{SOTA_ROOT}/models/network_x.py'.
+        gpu (str): GPT type to request for job. Defaults to 'TeslaV100-PCIE-32GB'.
+        python_file (str): Which script to run (llm_mutation.py or llm_crossover.py). Defaults to 'src/llm_mutation.py'.
+        top_p (float): sampling parameters for LLM. Defaults to 0.1.
+        temperature (float): sampleing parameters for LLM. Defaults to 0.2.
+    """
     
     def fetch_gene(filepath):
         return os.path.basename(filepath).replace('network_','').replace('.py','')
@@ -170,6 +182,12 @@ def write_bash_script(input_filename_x=f'{SOTA_ROOT}/network.py',
     return bash_script_content
 
 def create_bash_file(file_path, **kwargs):
+    """
+    Create and save a Bash script file to our computer.
+
+    Args:
+        file_path: where the script should be saved
+    """
     bash_script_content = write_bash_script(**kwargs)
     # Extract the directory from the file path
     directory = os.path.dirname(file_path)
@@ -184,7 +202,7 @@ def create_bash_file(file_path, **kwargs):
 def submit_bash(file_path, **kwargs):
     """ This should be general for subbing anything and returning:
         successful_sub_flag 
-        job_id
+        job_id.
     """
     create_bash_file(file_path, **kwargs)
     result = subprocess.run([RUN_COMMAND, file_path], capture_output=True, text=True)
@@ -277,6 +295,15 @@ def check4job_completion(job_id, local_output=None, check_interval=60, timeout=1
         print(f'\t‣ Waiting on check4job_completion LLM job: {job_id} Time: {round(time.time() - start_time)}s', flush=True)
         
 def generate_random_string(length=20):
+    """
+    Return a randomly generated string with specified length.
+    
+    Args:
+        length (int, optional): length of the randomly generated string. Defaults to 20.
+
+    Returns:
+        str: the randomly generated string
+    """
     # Define the characters that can be used in the string
     characters = string.ascii_letters + string.digits
     # Generate a random string of specified length
@@ -285,6 +312,17 @@ def generate_random_string(length=20):
     return random_string
     
 def create_individual(container, temp_min=0.05, temp_max=0.4):
+    """
+    Generate a new individual in the evolutionary process, then submit it as a job. We also update GLOBAL_DATA.
+    Args:
+        container (Individual): A class representing individuals
+        temp_min (float, optional): Minimum value for temperature. Defaults to 0.05.
+        temp_max (float, optional): Maximum value for temperature. Defaults to 0.4.
+
+    Returns:
+        container: the individual
+    """
+    
     box_print("Create Individual", print_bbox_len=60, new_line_end=False)
     out_dir = str(GENERATION)
     gene_id = generate_random_string(length=24)
@@ -321,7 +359,14 @@ def create_individual(container, temp_min=0.05, temp_max=0.4):
     return individual
     
 def submit_run(gene_id):
+    """
+    Create a Bash script to run training, save that script, submit it to the system, and record the job's status in GLOBAL_DATA.
+    """
+    
     def write_bash_script_py(gene_id, train_file='./sota/ExquisiteNetV2/train.py'):
+        """
+        Build and return a small bash script that runs a Python training job for a specific model.
+        """
         if not MACOS:
             tmp = f"-data {DATA_PATH} -end_lr 0.001 -seed 21 -val_r 0.2 -amp"
         else:
@@ -334,12 +379,18 @@ def submit_run(gene_id):
 
     # This is for subbing the python code
     def create_bash_file_py(file_path, gene_id, **kwargs):
+        """
+        Create and save a bash script file that will be used to run or submit Python training job.
+        """
         bash_script_content = write_bash_script_py(gene_id, **kwargs)
         with open(file_path, 'w') as file:
             file.write(bash_script_content)
         print(f"\t‣ Bash Script Saved to {file_path}")
 
     def submit_bash_py(file_path, gene_id, **kwargs):
+        """
+        Create and execute a Bash file that submits a Python training Job and check if it succeeded.
+        """
         create_bash_file_py(file_path, gene_id, **kwargs)
         job_id = None
         successful_sub_flag = False
@@ -375,6 +426,12 @@ def evalModel(individual):
     return None
 
 def check4model2run(gene_id):
+    """
+    Check for a given gene_id, whether a model file already exists. If it already exists, submit it for evaluation. 
+
+    Args:
+        gene_id (str): A unique identifier for a model
+    """
     # model_path = os.path.join(str(GENERATION), f'{gene_id}_model.txt')
     
     print(f'Checking for: SOTA_ROOT ./models/network_{gene_id}.py')
@@ -384,6 +441,9 @@ def check4model2run(gene_id):
             submit_run(gene_id)
             
 def check4results(gene_id):
+    """
+    Checking whether a specific model training job (identified by gene_id) has finished running and the status of the run.
+    """
     def check4error(gene_id):
         job_id = GLOBAL_DATA[gene_id]['results_job']
         if GLOBAL_DATA[gene_id]['local_output'] is not None:
@@ -545,6 +605,10 @@ def update_individual(ind, new_gene_id, old_gene_id=None, process_success=True, 
 
 # TODO: I need to cycle through by the job id to match the sub order
 def delayed_mate_check(offspring):
+    """
+    Check if any newly created individuals have delayed jobs that need to be checked for completion.
+    """
+    
     if DELAYED_CHECK is True:
         for individual in offspring:
             k = individual[0]
@@ -574,6 +638,9 @@ def delayed_mate_check(offspring):
     return offspring
 
 def delayed_creation_check(offspring):
+    """
+    Check if any newly created individuals are waiting to be ran.
+    """
     if DELAYED_CHECK is True:
         for individual in offspring:
             k = individual[0]
@@ -627,6 +694,9 @@ def delayed_mutate_check(offspring):
     return offspring
 
 def customCrossover(ind1, ind2):
+    """
+    Take two parent individuals and produces two new individuals by "mating".
+    """
     def combine_elements(ind1, ind2, temp_min=0.05, temp_max=0.1):
         """
         Combine elements of two individuals to create a new individual.
@@ -757,6 +827,15 @@ def customMutation(individual, indpb, temp_min=0.02, temp_max=0.35):
     return individual
     
 def remove_duplicates(population):
+    """
+    Remove duplicate individuals from a given population.
+
+    Args:
+        population: the population
+
+    Returns:
+        list: return the filtered list 
+    """
     unique_individuals = []
     seen_chromosomes = set()
 
@@ -771,6 +850,9 @@ def remove_duplicates(population):
 
 # --- Checkpoint Functions --- #
 def save_checkpoint(gen, folder_name="checkpoints"):
+    """
+    Save the current progress of an evolutionary algorithm run, so that if the algorithm crashes, it can resume without losing data.
+    """
     os.makedirs(folder_name, exist_ok=True)
     checkpoint_data = {
         "GLOBAL_DATA": GLOBAL_DATA,
@@ -785,6 +867,9 @@ def save_checkpoint(gen, folder_name="checkpoints"):
     print(f"Checkpoint saved as {filename}")
 
 def load_checkpoint(folder_name="checkpoints", checkpoint_file=None):
+    """
+    Restore saved progress.
+    """
     if not os.path.exists(folder_name):
         return None, None
     if checkpoint_file is None:
@@ -801,12 +886,18 @@ def load_checkpoint(folder_name="checkpoints", checkpoint_file=None):
     return None, None
 
 def true_nsga2(pop, k):
+    """
+    NSGA-II multi-objective optimization technique.
+    """
     pop = tools.selNSGA2(pop, len(pop)) # 10 diff
     new_pop = tools.selTournamentDCD(pop, k) # mults of 4
     return new_pop
 
 # Error Handling 
 def createPopulation():
+    """
+    Initialize the population for evolutionary algorithm.
+    """
     start_gen = 0
     box_print("CREATING POPULATION FROM SEED CODE")
     population = toolbox.population(n=start_population_size)
