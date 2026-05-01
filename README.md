@@ -5,23 +5,45 @@
 </p>
 <br>
 
+
+### LLM Inference Setup
+- Add an .env file in your root directory and define the following variables:
+```env
+GEMINI_API_KEY=sameple_api_key
+LLM_INFERENCE_ROOT_DIR="/home/hice1/kbhavsar31/scratch/llm-inference"
+``` 
+(change the root dir to where you cloned the repo)
+
 ### Introduction:
 
 In the ever-evolving domain of machine learning, the convergence of human cognitive skills and automated algorithms is entering a pivotal junction. This paper introduces “Guided Evolution” (GE), a novel framework that combines the human-like expertise of Large Language Models (LLMs) with the robust capabilities of Neural Architecture Search (NAS) through genetic algorithms. This innovative fusion advances automated machine learning, elevating traditional NAS by integrating a more insightful, intelligently guided evolutionary process.
 
 Central to this framework is our  “Evolution of Thought” (EoT) technique, which extends and refines concepts like Zero-Shot Chain-of-Thought, Automated Chain-of-Thought, and Tree-of-Thought. These methodologies aim to improve the reasoning capabilities of LLMs. EoT takes a unique step forward by enabling LLMs to receive result-driven feedback, empowering them to make informed improvements based on the performance of their prior code augmentations, a significant advancement in intelligent automated machine learning.
 
-EoT catalyzes LLMs to introspect and fine-tune suggestions based on past iterations, creating a self-enhancing feedback loop that fine-tunes architectural evolution. At the same, GE maintains essential genetic diversity for evolutionary algorithms while injecting human-like expertise and creativity into the evolutionary framework. Building from the insights of Ma et al. \cite{ma2023conceptual}, our Guided Evolutionary framework is further enhanced by a Character Role Play (CRP) technique, to markedly increase the feasibility, usefulness and creativity of ideas engendered by the LLM. 
+EoT catalyzes LLMs to introspect and fine-tune suggestions based on past iterations, creating a self-enhancing feedback loop that fine-tunes architectural evolution. At the same, GE maintains essential genetic diversity for evolutionary algorithms while injecting human-like expertise and creativity into the evolutionary framework. Building from the insights of Ma et al. \cite{ma2023conceptual}, our Guided Evolutionary framework is further enhanced by a Character Role Play (CRP) technique, to markedly increase the feasibility, usefulness and creativity of ideas engendered by the LLM.
 
-The effectiveness of the Guided Evolution (GE) framework is showcased in the evolution of the ExquisiteNetV2 model. This evolution, initiated with a State-Of-The-Art (SOTA) seed model, not only demonstrates the capacity of LLMs to build upon and enhance SOTA models in collaboration with human expertise but also underscores their autonomous model design. This case study illustrates the framework's self-sufficient ability to generate improved model variants, emphasizing the burgeoning impact of LLMs in redefining traditional model design pipelines, a step towards models that independently evolve and refine their architectures. 
+The effectiveness of the Guided Evolution (GE) framework is showcased in the evolution of the ExquisiteNetV2 model. This evolution, initiated with a State-Of-The-Art (SOTA) seed model, not only demonstrates the capacity of LLMs to build upon and enhance SOTA models in collaboration with human expertise but also underscores their autonomous model design. This case study illustrates the framework's self-sufficient ability to generate improved model variants, emphasizing the burgeoning impact of LLMs in redefining traditional model design pipelines, a step towards models that independently evolve and refine their architectures.
 
-______
+### Research Focus: LLM Inference Optimization
+
+Our research subteam is specifically focused on leveraging genetic programming techniques to optimize Large Language Model (LLM) inference time. By applying evolutionary algorithms to neural network architectures and inference pipelines, we aim to discover novel optimizations that can significantly reduce computational overhead while maintaining or improving model performance. This work extends the core Guided Evolution framework to address one of the most critical challenges in modern AI deployment: making powerful language models more efficient and accessible through intelligent architectural evolution.
+
+### Output Files
+
+During a run, the system generates several output files. The primary results are stored in `*_results.txt` files, where each file corresponds to an individual in the population. The format of these files is a single line of four comma-separated values:
+
+1.  **Test Accuracy**: The accuracy of the model on the test dataset (a value to be maximized).
+2.  **Total Parameters**: The total number of parameters in the model (a value to be minimized).
+3.  **Validation Accuracy**: The accuracy of the model on the validation dataset.
+4.  **Train Time**: The time taken to train the model, in seconds.
+
+---
 
 ### Setup
 
 This code utilizes [ExquisiteNetV2](https://github.com/shyhyawJou/ExquisiteNetV2) which is copied into the sota directory.
 
-Dependencies are managed through `pyproject.toml`. This package can be installed with `pip install .` or interacted with through tools such as `uv` 
+Dependencies are managed through `pyproject.toml`. This package can be installed with `pip install .` or interacted with through tools such as `uv`
 
 Then follow the instructions to prepare the CIFAR10 dataset in the [ExquisiteNetV2 README](./sota/ExquisiteNetV2/README.md)
 
@@ -29,7 +51,7 @@ This code has been tested on Python 3.12
 
 If you wish to use features with Google's Gemini, please follow the instructions for [Setting Up an API Key](https://ai.google.dev/gemini-api/docs/api-key)
 
-______
+---
 
 ### Autonomous Model Evolution:
 
@@ -37,17 +59,17 @@ ______
   <img src="./assets/ge_run1.gif" alt="">
 </p>
 
-______
+---
 
 ### Paper
 
 [LLM Guided Evolution - The Automation of Models Advancing Models](./assets/paper/LLM_Guided_Evolution___The_Automation_of_Models_Advancing_Models.pdf)
 
-______
+---
 
 ### Cited by DeepMind **AlphaEvolve**
 
-DeepMind’s coding agent **AlphaEvolve** highlights our *LLM-Guided Evolution* framework as prior art that helped inspire its large-scale, code-level evolutionary loop (see reference \[72\] in the white-paper). 
+DeepMind’s coding agent **AlphaEvolve** highlights our _LLM-Guided Evolution_ framework as prior art that helped inspire its large-scale, code-level evolutionary loop (see reference \[72\] in the white-paper).
 
 AlphaEvolve takes the GE idea of letting an LLM propose, mutate, and test code—and scales it to discover state-of-the-art algorithms across mathematics, scheduling, and hardware design.
 
@@ -60,5 +82,3 @@ Read the white-paper below:
   </a>
 </p>
 <br>
-
-
