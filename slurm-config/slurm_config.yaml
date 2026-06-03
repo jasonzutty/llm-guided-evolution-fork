@@ -1,19 +1,52 @@
-gpu_selection: A100-40GB|A100-80GB|H100|H200|V100-16GB|V100-32GB|RTX6000|A40|L40S
+gpu_selection: H200
+islands_bash_script: '#!/bin/bash
+
+    #SBATCH --job-name=IslandsController
+
+    #SBATCH -N1 --ntasks-per-node=16
+
+    #SBATCH --mem-per-gpu=16G
+
+    #SBATCH --time=16:00:00
+
+    #SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
+
+    #SBATCH --gres=gpu:1
+
+    #SBATCH -C intel
+
+    cd $SLURM_SUBMIT_DIR
+
+    echo "launching AIsurBL"
+
+    echo "Started on `/bin/hostname`"
+
+
+    module load cuda
+
+
+    export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+
+
+    # Run Python script
+
+    uv run python run_improved.py --checkpoints {} --global_path {} --llm_model {}
+    --prompt_group {}
+
+    '
 llm_bash_script: '#!/bin/bash
 
     #SBATCH --job-name=llm_oper
 
     #SBATCH -t 8:00:00
 
-    #SBATCH --mem-per-gpu 16G
-
-    #SBATCH -G 1
-
-    #SBATCH -C {}
+    #SBATCH --mem 16G
 
     #SBATCH -c 2
 
     #SBATCH -N 1
+
+    #SBATCH --output=run_job_outputs/evolution/slurm-%j.out
 
     echo "Launching AIsurBL"
 
@@ -22,7 +55,15 @@ llm_bash_script: '#!/bin/bash
 
     module load cuda
 
+    module load uv
+
     export CUDA_VISIBLE_DEVICES=0
+
+    export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
+
+    mkdir -p "$UV_CACHE_DIR"
+
+    echo "Using UV cache: $UV_CACHE_DIR"
 
 
     # Run Python script
@@ -46,6 +87,8 @@ python_bash_script: '#!/bin/bash
 
     #SBATCH -N 1
 
+    #SBATCH --output=run_job_outputs/evaluation/slurm-%j.out
+
     echo "Launching Python Evaluation"
 
     hostname
@@ -56,6 +99,12 @@ python_bash_script: '#!/bin/bash
     module load uv
 
     export CUDA_VISIBLE_DEVICES=0
+
+    export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
+
+    mkdir -p "$UV_CACHE_DIR"
+
+    echo "Using UV cache: $UV_CACHE_DIR"
 
 
     # Run Python script

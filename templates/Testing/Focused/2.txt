@@ -1,0 +1,6 @@
+Add layer(s) or complexity to this neural network architecture to improve its performance.
+
+The current code block:
+```python
+{} 
+```

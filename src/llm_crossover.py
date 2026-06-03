@@ -1,6 +1,13 @@
 import os
+import sys
 import argparse
 import random
+
+# Ensure repo root is on sys.path so `src` imports work from generated bash scripts
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
 from cfg.constants import *
 from utils.print_utils import box_print
 from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf, 
@@ -9,9 +16,26 @@ from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf,
 
 
 def augment_network(input_filename_x, input_filename_y, output_filename,
-                    top_p=0.15, temperature=0.1, apply_quality_control=False,
-                    inference_submission=False):
-    """Augment Python Network Script."""
+                    top_p=0.15, llm_model=LLM_QWEN, temperature=0.1, apply_quality_control=False):
+    """Augment Python Network Script.
+    
+    Parameters
+    ----------
+    input_filename_x : os.PathLike
+        _description_
+    input_filename_y : os.PathLike
+        _description_
+    output_filename : os.PathLike
+        _description_
+    top_p : float, optional
+        _description_, by default 0.15
+    llm_model : str, optional
+        _description_, by default LLM_QWEN
+    temperature : float, optional
+        _description_, by default 0.1
+    apply_quality_control : bool, optional
+        _description_, by default False
+    """
     # Split the input files
     parts_x = split_file(input_filename_x)
     parts_y = split_file(input_filename_y)
@@ -33,11 +57,11 @@ def augment_network(input_filename_x, input_filename_y, output_filename,
     txt2llm = template_txt.format(x.strip(), y.strip())
     # Generate augmented code
     code_from_llm = generate_augmented_code(txt2llm, augment_idx, apply_quality_control,
-                                            top_p, temperature, inference_submission=inference_submission)
-    if code_from_llm is None:
-        print(f"ERROR: LLM failed to generate crossover code for {output_filename}")
-        import sys
-        sys.exit(1)
+                                            top_p, llm_model, temperature)
+    
+    if not code_from_llm:
+        code_from_llm = txt2llm
+    
     # Insert note if present
     temp_txt = parts_x[augment_idx]
     note_txt = extract_note(temp_txt)
@@ -50,7 +74,19 @@ def augment_network(input_filename_x, input_filename_y, output_filename,
 
 
 def write_augmented_code(output_filename, parts_x, parts_y):
-    """Writes the augmented code to the output file."""
+    """
+    Writes the augmented code to the output file.
+
+    Parameters
+    ----------
+    output_filename : os.PathLike
+        _description_
+    parts_x : _type_
+        _description_
+    parts_y : _type_
+        _description_
+    """    
+
     try:
         prompt_log_cross = parts_y[0].split("# --PROMPT LOG--\n")[0]
         prompt_log_cross = f"\n# {'='*10} Start: GeneCrossed\n{prompt_log_cross.strip()}\n# {'='*10} End:\n"
@@ -71,10 +107,10 @@ if __name__ == "__main__":
     parser.add_argument('input_filename_x', type=str, help='Input file name')
     parser.add_argument('input_filename_y', type=str, help='Input file name')
     parser.add_argument('output_filename', type=str, help='Output file name')
+    parser.add_argument('--llm_model', type=str, default=False, help='LLM Model Name')
     parser.add_argument('--top_p', type=float, default=0.15, help='Top P value for text generation')
     parser.add_argument('--temperature', type=float, default=0.1, help='Temperature value for text generation')
     parser.add_argument('--apply_quality_control', type=str2bool, default=False, help='Use LLM QC')
-    parser.add_argument('--inference_submission', type=str2bool, default=False, help='Hugging Face bool')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -84,7 +120,7 @@ if __name__ == "__main__":
                     input_filename_y=args.input_filename_y,
                     output_filename=args.output_filename,
                     top_p=args.top_p, 
+                    llm_model=args.llm_model,
                     temperature=args.temperature,
                     apply_quality_control=args.apply_quality_control,
-                    inference_submission=args.inference_submission,
                    )

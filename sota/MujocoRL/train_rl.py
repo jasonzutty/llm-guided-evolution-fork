@@ -10,6 +10,38 @@ from stable_baselines3 import PPO
 from eval import evaluate_model
 
 
+def write_failure_results(gene_id, start_time, message, stats_dir=None):
+    """Record invalid fitness for generated models that cannot be evaluated."""
+    train_time = time.time() - start_time
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    results_dir = os.path.join(script_dir, "results")
+    os.makedirs(results_dir, exist_ok=True)
+    with open(os.path.join(results_dir, f"{gene_id}_results.txt"), "w") as f:
+        f.write(f"-999999.0,0.0,{train_time},999999999")
+
+    if stats_dir:
+        os.makedirs(stats_dir, exist_ok=True)
+        stats_path = os.path.join(stats_dir, f"{gene_id}_stats.json")
+        with open(stats_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "gene_id": gene_id,
+                    "status": "failed",
+                    "error": message,
+                    "train_time_sec": train_time,
+                    "mean_reward": -999999.0,
+                    "std_reward": 0.0,
+                    "param_count": 999999999,
+                },
+                f,
+                indent=2,
+            )
+
+    print(f"ERROR evaluating generated model: {message}")
+    print(f"Mean reward: -999999.0, Std: 0.0, Time: {train_time:.1f}s")
+    print("Job Done")
+
+
 def main(
     gene_id,
     timesteps=500000,
@@ -18,19 +50,21 @@ def main(
     model_dir="sota/MujocoRL/trained_models",
     stats_dir="sota/MujocoRL/stats",
 ):
+    start_time = time.time()
 
-    module = importlib.import_module(f"models.network_{gene_id}")
-
-    policy_kwargs = module.get_policy_kwargs()
-    ppo_kwargs = module.get_ppo_kwargs()
+    try:
+        module = importlib.import_module(f"models.network_{gene_id}")
+        policy_kwargs = module.get_policy_kwargs()
+        ppo_kwargs = module.get_ppo_kwargs()
+    except Exception as e:
+        write_failure_results(gene_id, start_time, repr(e), stats_dir)
+        return
 
     # Extract the policy class and remove it from policy_kwargs
     # so it doesn't get passed twice to PPO
     policy_class = policy_kwargs.pop("policy_class", "MlpPolicy")
 
     env = gym.make("HalfCheetah-v4")
-
-    start_time = time.time()
 
     # For small smoke-test runs, clamp n_steps so PPO doesn't collect
     # more env steps than total_timesteps (avoids wasting time on login nodes)
@@ -48,38 +82,35 @@ def main(
         )
     except Exception as e:
         # If the LLM-generated architecture is broken, write error results and exit
-        print(f"ERROR creating model: {e}")
-        train_time = time.time() - start_time
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        results_dir = os.path.join(script_dir, "results")
-        os.makedirs(results_dir, exist_ok=True)
-        with open(os.path.join(results_dir, f"{gene_id}_results.txt"), "w") as f:
-            f.write(f"-999999.0,0.0,{train_time},999999999")
-        print(f"Mean reward: -999999.0, Std: 0.0, Time: {train_time:.1f}s")
-        print("Job Done")
+        write_failure_results(gene_id, start_time, repr(e), stats_dir)
+        env.close()
         return
 
     param_count = sum(p.numel() for p in model.policy.parameters())
 
-    model.learn(total_timesteps=timesteps)
-    os.makedirs(model_dir, exist_ok=True)
-    model_path = os.path.join(model_dir, f"{gene_id}.zip")
-    model.save(model_path)
+    try:
+        model.learn(total_timesteps=timesteps)
+        os.makedirs(model_dir, exist_ok=True)
+        model_path = os.path.join(model_dir, f"{gene_id}.zip")
+        model.save(model_path)
 
+        # Evaluate using eval.py
+        if eval_episodes is None:
+            num_eval_episodes = 1 if timesteps <= 10000 else 10
+        else:
+            num_eval_episodes = eval_episodes
+        if eval_max_steps is None:
+            max_eval_steps = 200 if timesteps <= 10000 else 1000
+        else:
+            max_eval_steps = eval_max_steps
 
-    # Evaluate using eval.py
-    if eval_episodes is None:
-        num_eval_episodes = 1 if timesteps <= 10000 else 10
-    else:
-        num_eval_episodes = eval_episodes
-    if eval_max_steps is None:
-        max_eval_steps = 200 if timesteps <= 10000 else 1000
-    else:
-        max_eval_steps = eval_max_steps
-
-    mean_reward, std_reward, rewards, metrics = evaluate_model(
-        model, env, num_episodes=num_eval_episodes, max_steps=max_eval_steps
-    )
+        mean_reward, std_reward, rewards, metrics = evaluate_model(
+            model, env, num_episodes=num_eval_episodes, max_steps=max_eval_steps
+        )
+    except Exception as e:
+        write_failure_results(gene_id, start_time, repr(e), stats_dir)
+        env.close()
+        return
     train_time = time.time() - start_time
 
     # Save results under the SOTA_ROOT/results directory (where run_improved.py expects them)

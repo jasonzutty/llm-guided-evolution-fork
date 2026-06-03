@@ -59,7 +59,11 @@ llm-bash-script
 ------
 
 server-sh
+<<<<<<< HEAD
+------
+=======
 ---------
+>>>>>>> origin/MosesTheRedSea-main
 #!/bin/bash
 #SBATCH --job-name=LLMGE01_Server
 #SBATCH -t 7-00:00
@@ -68,4 +72,19 @@ server-sh
 #SBATCH --mem 160G
 #SBATCH -c 16
 #SBATCH -w ice193
+<<<<<<< HEAD
+------
+
+
+island-controller
+------
+#!/bin/bash
+#SBATCH --job-name=IslandsController
+#SBATCH -t 30-00:00
+#SBATCH -n 16
+#SBATCH -N 1
+#SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
+------
+=======
 ---------
+>>>>>>> origin/MosesTheRedSea-main

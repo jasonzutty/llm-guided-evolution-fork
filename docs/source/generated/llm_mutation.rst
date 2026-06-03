@@ -20,3 +20,9 @@
       submit_mixtral
       submit_mixtral_hf
    
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Path
+   
