@@ -150,10 +150,14 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
         if not prompt_templates:
             raise FileNotFoundError(f"No prompt templates found with glob: {PROMPT_GLOB}")
         template_path = np.random.choice(prompt_templates)
+        print(f"\t‣ Prompt template: {os.path.relpath(template_path, ROOT_DIR)}")
         mute_type = os.path.basename(template_path).split('.')[0]  # Assuming the file extension needs to be removed
         with open(template_path, 'r') as file:
             template_txt = file.read()
-        with open(f'{ROOT_DIR}/templates/ConstantRules.txt', 'r') as file:
+        rules_path = globals().get("CONSTANT_RULES_PATH", "templates/ConstantRules.txt")
+        if not os.path.isabs(rules_path):
+            rules_path = os.path.join(ROOT_DIR, rules_path)
+        with open(rules_path, 'r') as file:
             rules_txt = file.read()
         template_txt = f'{template_txt}\n{rules_txt}'
     return template_txt, mute_type
@@ -1186,4 +1190,3 @@ if __name__ == "__main__":
         print(f"Best Fitness: {best_ind.fitness.values}")
         
     print("-- End of Era --")
-

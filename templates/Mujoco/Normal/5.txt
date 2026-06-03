@@ -1,0 +1,8 @@
+Improve this HalfCheetah-v4 PPO gene chunk without breaking module-level compatibility.
+
+Favor simple, valid SB3 changes over complex custom classes. The generated code must compile and run without external data.
+
+The current code block:
+```python
+{}
+```

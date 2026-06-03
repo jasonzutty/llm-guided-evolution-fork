@@ -5,7 +5,7 @@ import yaml
 class RuntimeConfig:
     def __init__(self):
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        sota_root = os.path.join(root_dir, "sota", "Titanic")
+        sota_root = os.path.join(root_dir, "sota", "MujocoRL")
 
         # Allow per-cluster overrides without importing heavyweight cfg modules.
         self.ROOT_DIR = os.getenv("LLMGE_ROOT_DIR", root_dir)
@@ -17,8 +17,9 @@ class RuntimeConfig:
         self.SOTA_ROOT = os.getenv("LLMGE_SOTA_ROOT", sota_root)
         self.SEED_NETWORK = os.getenv(
             "LLMGE_SEED_NETWORK",
-            os.path.join(self.SOTA_ROOT, "model.py"),
+            os.path.join(self.SOTA_ROOT, "network.py"),
         )
+        self.OUTPUT_DIR = os.getenv("LLMGE_OUTPUT_DIR", "mujoco_rl_output")
         self.PORT = int(os.getenv("LLMGE_PORT", "8137"))
 
 
@@ -88,7 +89,7 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py titanic_test
+uv run python run_improved.py {CONFIG.OUTPUT_DIR}
 """
     replace_script_configuration("run.sh", run_sh)
 
@@ -216,11 +217,10 @@ export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 # Change to the repository root
 cd {CONFIG.ROOT_DIR}
 
-# Starts running Island Migration with 3 islands (same LLM, three prompt groups)
-uv run python islands_wrapper.py titanic_islands_run \\
-    --num_islands 3 \\
-    --llms llama3 \\
-    --prompt_groups "titanic/focused,titanic/general,titanic/roleplay"
+# Starts running Island Migration with the default Mujoco prompt group
+uv run python islands_wrapper.py {CONFIG.OUTPUT_DIR} \\
+    --num_islands 1 \\
+    --llms llama3
 
 if (( COUNT > 1 )); then
     NEXT_COUNT=$((COUNT - 1))

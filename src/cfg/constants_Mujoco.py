@@ -20,7 +20,7 @@ SEED_NETWORK = os.path.join(SOTA_ROOT, "network.py")
 MODEL = "network"
 #: Path to local LLM model path used by server.py for LLM operations
 MODEL_PATH = "/storage/ice-shared/vip-vvk/llm_storage/meta-llama/Llama-3.3-70B-Instruct/"
-LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "3000"))
+LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "1648"))
 #: Directory where LLM-generated model variants are stored
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models")
 #slurm output
@@ -61,9 +61,10 @@ HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
 
 # Multi-island settings used by islands_wrapper.py.
 GLOBAL_DATA_PATH = "global_data"
-DEFAULT_PROMPT_GROUP = "Testing/Normal"
-PROMPT_GROUP_TEMPLATE = "templates/Testing/{prompt_group}/*.txt"
+DEFAULT_PROMPT_GROUP = "Mujoco/Normal"
+PROMPT_GROUP_TEMPLATE = "templates/{prompt_group}/*.txt"
 PROMPTS = f"templates/{DEFAULT_PROMPT_GROUP}/*.txt"
+CONSTANT_RULES_PATH = "templates/Mujoco/ConstantRules.txt"
 
 QC_CHECK_BOOL = False
 HUGGING_FACE_BOOL = False

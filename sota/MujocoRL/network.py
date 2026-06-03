@@ -10,6 +10,8 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 # It must always accept *args and **kwargs and pass them to super().__init__().
 # get_policy_kwargs() must return a dict with "policy_class" key.
 # get_ppo_kwargs() must return a dict of valid PPO hyperparameters.
+# Do not override forward(), _predict(), or evaluate_actions(); let SB3 handle those.
+# Prefer mutating HIDDEN_PI, HIDDEN_VF, ACTIVATION, and PPO kwargs.
 # -- NOTE --
 
 # ===============================
