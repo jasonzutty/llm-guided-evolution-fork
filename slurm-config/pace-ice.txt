@@ -68,10 +68,10 @@ server-sh
 ------
 
 
-island-controller
+islands
 ------
 #!/bin/bash
-#SBATCH --job-name=IslandsController
+#SBATCH --job-name=Islands
 #SBATCH -N1 --ntasks-per-node=16
 #SBATCH --mem-per-gpu=16G
 #SBATCH --time=16:00:00

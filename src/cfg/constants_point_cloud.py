@@ -4,10 +4,23 @@ import numpy as np
 import torch
 
 # ROOT_DIR = "/home/hice1/amcdaniel39/scratch/llm-guided-evolution-fork"
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sota_root = os.path.join(root_dir, "sota", "Point-Transformers")
+ROOT_DIR = os.getenv("LLMGE_ROOT_DIR", root_dir)
+EVAL_NO_PROGRESS_TIMEOUT_SECONDS = int(os.getenv("LLMGE_EVAL_NO_PROGRESS_TIMEOUT_SECONDS", str(40 * 60)))
+
+SLURM_CONFIG_DIR = os.getenv(
+	"LLMGE_SLURM_CONFIG_DIR",
+	os.path.join(ROOT_DIR, "slurm-config"),
+)
+CLUSTER = os.getenv("LLMGE_CLUSTER", "ice-hammer")
+PORT = int(os.getenv("LLMGE_PORT", "8137"))
 DATA_PATH = os.path.join(ROOT_DIR, "data/titanic")
-SOTA_ROOT = os.path.join(ROOT_DIR, 'sota/Point-Transformers')
-SEED_NETWORK = os.path.join(SOTA_ROOT, 'models/Menghao/model.py')
+SOTA_ROOT = os.getenv("LLMGE_SOTA_ROOT", sota_root)
+SEED_NETWORK = os.getenv(
+	"LLMGE_SEED_NETWORK",
+	os.path.join(SOTA_ROOT, "models/Menghao/model.py"),
+)
 MODEL = "model" 
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models/llmge_models") 
 TRAIN_FILE = os.path.join(SOTA_ROOT, "train_cls.py") 
@@ -19,6 +32,20 @@ ENVIRONMENT_DIR = os.path.join(ROOT_DIR, ".venv")
 SLURM_CONFIG_DIR = os.path.join(ROOT_DIR, "slurm-config/")
 LOCAL_LLM = True
 HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
+
+SLURM_MIXT_INPUT_X = SEED_NETWORK
+SLURM_MIXT_INPUT_Y = os.path.join(SOTA_ROOT, "models/Menghao/model_x.py")
+SLURM_MIXT_OUTPUT = os.path.join(SOTA_ROOT, "models/Menghao/model_z.py")
+SLURM_MIXT_TOP_P = 0.15
+SLURM_MIXT_TEMPERATURE = 0.1
+SLURM_MIXT_APPLY_QUALITY_CONTROL = True
+SLURM_MIXT_BIT = 8
+
+ISLAND_CONTROLLER_RUN_NAME = "titanic_islands_run"
+ISLAND_CONTROLLER_NUM_ISLANDS = 2
+ISLAND_CONTROLLER_LLMS = "llama3"
+ISLAND_CONTROLLER_PROMPT_GROUPS = "titanic/focused,titanic/general"
+ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
 
 QC_CHECK_BOOL = False
 HUGGING_FACE_BOOL = False
