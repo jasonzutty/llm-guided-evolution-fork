@@ -79,7 +79,7 @@ server-sh
 island-controller
 ------
 #!/bin/bash
-#SBATCH --job-name=IslandsController
+#SBATCH --job-name=Islands
 #SBATCH -t 30-00:00
 #SBATCH -n 16
 #SBATCH -N 1

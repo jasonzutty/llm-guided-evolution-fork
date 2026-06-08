@@ -470,6 +470,7 @@ def submit_run(gene_id):
     successful_sub_flag, job_id, local_output = submit_bash_py(file_path, gene_id)
     GLOBAL_DATA[gene_id]['status'] = 'running eval'
     GLOBAL_DATA[gene_id]['results_job'] = job_id
+    GLOBAL_DATA[gene_id]['eval_start_time'] = time.time()
     GLOBAL_DATA[gene_id]['local_output'] = local_output
     print(f'\t‣ Running py File for {gene_id}, {job_id}')
 
@@ -550,10 +551,22 @@ def check4results(gene_id):
         # print('Job Has Not Finished Running Yet...', flush=True)
         pass
 
-def check_and_update_fitness(population, timeout=3600*30, loop_delay=60):
+def cancel_eval_job(gene_id, reason):
+    job_id = GLOBAL_DATA[gene_id].get('results_job')
+    if LOCAL or not job_id:
+        return
+
+    result = subprocess.run(['scancel', str(job_id)], capture_output=True, text=True)
+    if result.returncode == 0:
+        print(f"\t‣ Cancelled eval job {job_id} for {gene_id}: {reason}", flush=True)
+    else:
+        stderr = result.stderr.strip()
+        print(f"\t☠ Failed to cancel eval job {job_id} for {gene_id}: {stderr}", flush=True)
+
+def check_and_update_fitness(population, timeout=EVAL_NO_PROGRESS_TIMEOUT_SECONDS, loop_delay=60):
     """ This function submits jobs and then if submitted it checks for four possibilities.
     
-    timeout: (int): seconds until the model run is killed and assigned the max error
+    timeout: (int): seconds without an evaluation result before the model job is killed
     loop_delay (int): seconds until iterating over the jobs
     
     for a job four are four possibilities:
@@ -598,9 +611,11 @@ def check_and_update_fitness(population, timeout=3600*30, loop_delay=60):
                     # Process results and assign fitness
                     fitness_tuple = GLOBAL_DATA[gene_id]['fitness']  # Implement this function
                     ind.fitness.values = fitness_tuple
-                elif time.time() - GLOBAL_DATA[gene_id]['start_time'] > timeout:
-                    print(f"Timeout for gene ID {gene_id}")
+                elif time.time() - GLOBAL_DATA[gene_id].get('eval_start_time', GLOBAL_DATA[gene_id]['start_time']) > timeout:
+                    print(f"Timeout for gene ID {gene_id} after {timeout} seconds without evaluation result")
+                    cancel_eval_job(gene_id, f"no evaluation result for {timeout} seconds")
                     ind.fitness.values = INVALID_FITNESS_MAX 
+                    GLOBAL_DATA[gene_id]['fitness'] = INVALID_FITNESS_MAX
                     GLOBAL_DATA[gene_id]['status'] = 'FAILED: TIMEOUT'
                 else:
                     if 'results_job' not in GLOBAL_DATA[gene_id].keys():
@@ -1186,4 +1201,3 @@ if __name__ == "__main__":
         print(f"Best Fitness: {best_ind.fitness.values}")
         
     print("-- End of Era --")
-

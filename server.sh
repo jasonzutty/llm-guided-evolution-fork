@@ -39,4 +39,4 @@ else
     echo "Skipping island controller submission"
 fi
 
-uv run uvicorn server:app --host $SERVER_HOSTNAME --port 8137 --workers 1
+uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 8137 --workers 1

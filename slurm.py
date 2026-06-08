@@ -1,36 +1,17 @@
 import os
 import yaml
 
-
-class RuntimeConfig:
-    def __init__(self):
-        root_dir = os.path.dirname(os.path.abspath(__file__))
-        sota_root = os.path.join(root_dir, "sota", "Titanic")
-
-        # Allow per-cluster overrides without importing heavyweight cfg modules.
-        self.ROOT_DIR = os.getenv("LLMGE_ROOT_DIR", root_dir)
-        self.SLURM_CONFIG_DIR = os.getenv(
-            "LLMGE_SLURM_CONFIG_DIR",
-            os.path.join(self.ROOT_DIR, "slurm-config"),
-        )
-        self.CLUSTER = os.getenv("LLMGE_CLUSTER", "pace-ice")
-        self.SOTA_ROOT = os.getenv("LLMGE_SOTA_ROOT", sota_root)
-        self.SEED_NETWORK = os.getenv(
-            "LLMGE_SEED_NETWORK",
-            os.path.join(self.SOTA_ROOT, "model.py"),
-        )
-        self.PORT = int(os.getenv("LLMGE_PORT", "8137"))
-
-
-CONFIG = RuntimeConfig()
+from src.cfg import constants
 
 
 def replace_script_configuration(file_path, new_config):
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(constants.ROOT_DIR, file_path)
     with open(file_path, 'w') as f:
         f.write(new_config if new_config.endswith('\n') else new_config + '\n')
 
 
-def save_to_yaml(llm, python, gpu, islands, file_path=CONFIG.SLURM_CONFIG_DIR):
+def save_to_yaml(llm, python, gpu, islands, file_path=constants.SLURM_CONFIG_DIR):
     yaml_data = {
         "gpu_selection": gpu,
         "python_bash_script": python,
@@ -70,7 +51,7 @@ def parse_config_sections(content):
 
 
 if __name__ == "__main__":
-    configuration_path = os.path.join(CONFIG.SLURM_CONFIG_DIR, f"{CONFIG.CLUSTER}.txt")
+    configuration_path = os.path.join(constants.SLURM_CONFIG_DIR, f"{constants.CLUSTER}.txt")
 
     with open(configuration_path, 'r') as file:
         content = [item.strip() for item in file.readlines()]
@@ -103,7 +84,7 @@ export TOKENIZERS_PARALLELISM=false
 export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
 mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
-uv run python llm_crossover.py '{CONFIG.SEED_NETWORK}' '{CONFIG.SOTA_ROOT}/models/Menghao/model_x.py' '{CONFIG.SOTA_ROOT}/models/Menghao/model_z.py'  --top_p 0.15   --temperature 0.1 --apply_quality_control 'True' --bit 8
+uv run python llm_crossover.py '{constants.SLURM_MIXT_INPUT_X}' '{constants.SLURM_MIXT_INPUT_Y}' '{constants.SLURM_MIXT_OUTPUT}'  --top_p {constants.SLURM_MIXT_TOP_P}   --temperature {constants.SLURM_MIXT_TEMPERATURE} --apply_quality_control '{constants.SLURM_MIXT_APPLY_QUALITY_CONTROL}' --bit {constants.SLURM_MIXT_BIT}
 """
     replace_script_configuration("src/mixt.sh", mixt_sh)
 
@@ -143,7 +124,7 @@ echo "Using UV cache: $UV_CACHE_DIR"
 """
 
     # Generate islands bash script template (for islands_wrapper.py)
-    islands_script = sections.get("island-controller", "") + """
+    islands_script = sections.get("islands", sections.get("island-controller", "")) + """
 cd $SLURM_SUBMIT_DIR
 echo "launching AIsurBL"
 echo "Started on `/bin/hostname`"
@@ -186,14 +167,14 @@ echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT)"
 echo "Submitting island controller (count=$COUNT)"
 sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
-uv run uvicorn server:app --host $SERVER_HOSTNAME --port {CONFIG.PORT} --workers 1
+uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port {constants.PORT} --workers 1
 """
     server_config = sections.get("server-sh", "")
     replace_script_configuration("server.sh", server_config + local_llm_server)
     print(f"Generated server.sh with config:\n{server_config}")
 
     # Generate unified island_controller.sbatch
-    island_controller = sections.get("island-controller", "") + f"""
+    island_controller = sections.get("island-controller", sections.get("islands", "")) + f"""
 # Island controller arguments:
 # $1 (COUNT): Number of remaining restart iterations
 # $2 (PREV_SERVER_JOB_ID): Job ID of the currently-running server (to cancel)
@@ -211,13 +192,12 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd {CONFIG.ROOT_DIR}
+cd {constants.ROOT_DIR}
 
-# Starts running Island Migration with 3 islands (same LLM, three prompt groups)
-uv run python islands_wrapper.py titanic_islands_run \\
-    --num_islands 3 \\
-    --llms llama3 \\
-    --prompt_groups "titanic/focused,titanic/general,titanic/roleplay"
+uv run python islands_wrapper.py {constants.ISLAND_CONTROLLER_RUN_NAME} \\
+    --num_islands {constants.ISLAND_CONTROLLER_NUM_ISLANDS} \\
+    --llms {constants.ISLAND_CONTROLLER_LLMS} \\
+    --prompt_groups "{constants.ISLAND_CONTROLLER_PROMPT_GROUPS}"
 
 if (( COUNT > 1 )); then
     NEXT_COUNT=$((COUNT - 1))
@@ -229,9 +209,13 @@ if (( COUNT > 1 )); then
     sbatch server.sh "$NEXT_COUNT"
 fi
 """
+    island_controller = island_controller.replace(
+        "#SBATCH --job-name=Islands",
+        "#SBATCH --job-name=IslandsController"
+    )
     replace_script_configuration("island_controller.sbatch", island_controller)
     print(f"Generated island_controller.sbatch")
 
     # Save templates to YAML for runtime use
     save_to_yaml(llm_script, python_script, llm_gpu, islands_script)
-    print(f"Saved configuration to {CONFIG.SLURM_CONFIG_DIR}/slurm_config.yaml")
+    print(f"Saved configuration to {constants.SLURM_CONFIG_DIR}/slurm_config.yaml")
