@@ -25,7 +25,7 @@ islands_bash_script: '#!/bin/bash
     module load cuda
 
 
-    export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+    export HF_HOME={constants.HF_HOME}
 
 
     # Run Python script

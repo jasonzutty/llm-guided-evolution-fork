@@ -4,6 +4,7 @@ import yaml
 from src.cfg import constants
 
 
+
 def replace_script_configuration(file_path, new_config):
     if not os.path.isabs(file_path):
         file_path = os.path.join(constants.ROOT_DIR, file_path)
@@ -69,7 +70,7 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py titanic_test
+uv run python run_improved.py {constants.OUTPUT_DIR}
 """
     replace_script_configuration("run.sh", run_sh)
 
@@ -131,7 +132,7 @@ echo "Started on `/bin/hostname`"
 
 module load cuda
 
-export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+export HF_HOME={constants.HF_HOME}
 
 # Run Python script
 uv run python run_improved.py --checkpoints {} --global_path {} --llm_model {} --prompt_group {}
@@ -143,7 +144,7 @@ echo "launching LLM Server"
 
 # Optional chained submission count to work around walltime limits
 COUNT=${{1:-1}}
-SERVER_BACKEND=${{2:-${{LLMGE_SERVER_BACKEND:-{CONFIG.LLM_SERVER_BACKEND}}}}}
+SERVER_BACKEND=${{2:-${{LLMGE_SERVER_BACKEND:-{constants.LLM_SERVER_BACKEND}}}}}
 
 hostname
 
@@ -171,10 +172,10 @@ sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
 case "$SERVER_BACKEND" in
     vllm)
-        uv run --no-project --with "vllm>=0.8.5" --with fastapi --with uvicorn python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port {CONFIG.PORT} --workers 1
+        uv run --no-project --with "vllm>=0.8.5" --with fastapi --with uvicorn python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port {constants.PORT} --workers 1
         ;;
     normal|transformers|baseline)
-        uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port {CONFIG.PORT} --workers 1
+        uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port {constants.PORT} --workers 1
         ;;
     *)
         echo "Unknown LLM server backend '$SERVER_BACKEND'. Use 'vllm' or 'normal'." >&2
@@ -202,7 +203,7 @@ echo "$COUNT iterations remaining"
 module load cuda
 
 # LLM_Storage
-export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+export HF_HOME={constants.HF_HOME}
 
 # Change to the repository root
 cd {constants.ROOT_DIR}

@@ -20,6 +20,7 @@ SEED_NETWORK = os.getenv(
 )
 MODEL = "model"
 # Path to local LLM model path used by server.py for LLM operations
+HF_HOME = os.getenv("HF_HOME", "/storage/ice-shared/vip-vvk/llm_storage/")
 MODEL_PATH = "/storage/ice-shared/vip-vvk/llm_storage/meta-llama/Llama-3.3-70B-Instruct/"
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models/llmge_models") 
 TRAIN_FILE = os.path.join(SOTA_ROOT, "eval.py") 
@@ -37,7 +38,7 @@ PROMPTS = f"templates/{DEFAULT_PROMPT_GROUP}/**/*.txt"
 
 # TODO: Adding this here, I think it's supposed to parse from the command line
 OUTPUT_DIR = "titanic_test"
-PORT = int(os.getenv("LLMGE_PORT", "8137"))
+PORT = int(os.getenv("LLMGE_PORT", "2244"))
 
 LLM_MODEL = 'llama3.3'
 PACE_ICE = True

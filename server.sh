@@ -39,10 +39,10 @@ sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
 case "$SERVER_BACKEND" in
     vllm)
-        uv run --no-project --with "vllm>=0.8.5" --with fastapi --with uvicorn python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port 8137 --workers 1
+        uv run --no-project --with "vllm>=0.8.5" --with fastapi --with uvicorn python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port 2244 --workers 1
         ;;
     normal|transformers|baseline)
-        uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 8137 --workers 1
+        uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 2244 --workers 1
         ;;
     *)
         echo "Unknown LLM server backend '$SERVER_BACKEND'. Use 'vllm' or 'normal'." >&2
