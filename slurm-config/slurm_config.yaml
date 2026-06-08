@@ -1,7 +1,7 @@
 gpu_selection: H200
 islands_bash_script: '#!/bin/bash
 
-    #SBATCH --job-name=IslandsController
+    #SBATCH --job-name=Islands
 
     #SBATCH -N1 --ntasks-per-node=16
 

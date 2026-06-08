@@ -43,18 +43,21 @@ Next you will need to submit an inference server that the LLM-GE will use for ma
 
 Monitor the output and then when you are ready, you will run `sbatch run.sh` to kick off an evolution!
 
-Since the `run.sh` script and the `server.sh` script only run for 8 hours each you will have to resubmit the jobs after they time out. You can automate this process using the `-d afterany:<job_id>` command for sbatch. This will make the next job run only after the previous job has completed. You can use this command to build a dependancy chain that will execute one job after another until all jobs complete. Here is an example:
+Since the `run.sh` script and the `server.sh` script only run for 8 hours each you will have to resubmit the jobs after they time out. You can automate this process using the `-d afterany:<job_id>` and `-d after:<job_id>` commands for sbatch. The `afterany` keyword will queue up a job to run after another job finishes. The `after` keyword will trigger a job to be submitted once another job starts. Since the server job is a resource intensive job it often has much longer time in the queue than the run job. To avoid having the run client active without a server use the `after` keyword to ensure a server is active once the client starts. You can use these command to build a dependancy chain that will execute one job after another until all jobs complete. Here is an example:
 
 ```
 [amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch server.sh
 Submitted batch job 3194630
+[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d after:3194630 run.sh
+Submitted batch job 3194631
 [amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3194630 server.sh
-Submitted batch job 3198458
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3198458 server.sh
-Submitted batch job 3198460
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3198460 server.sh
-Submitted batch job 3198461
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3198461 server.sh
+Submitted batch job 3194632
+[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d after:3194632 run.sh
+Submitted batch job 3194633
+[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3194632 server.sh
+Submitted batch job 3194634
+[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d after:3194634 run.sh
+Submitted batch job 3194635
 ```
 
-These commands will make 5 server processes run one after another, effectively letting the server run for 40 hours! You can do this same thing with the `run.sh` script to make the evolution run for much longer than 8 hours.
+These commands will chain 3 server/client jobs one after another, effectively letting the server run for 24 hours! NOTE: running jobs at scale should only be done AFTER you confirm that it runs once. Otherwise it becomes increasingly difficult to debug, and potentially uses far more resources on pace than necessary making it difficult for others to get jobs running. Don't scale up your resources without careful verification that it makes sense to.

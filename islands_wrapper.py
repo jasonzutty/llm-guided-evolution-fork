@@ -30,6 +30,9 @@ def submit_run(tempFile, text):
         The job ID returned by the cluster after submitting the script.
         If submission fails, returns None.
     """
+    script_dir = os.path.dirname(tempFile)
+    if script_dir:
+        os.makedirs(script_dir, exist_ok=True)
     with open(tempFile, 'w') as file:
         file.write(text)
     print(f"\t‣ Bash Script Saved to {tempFile}")
@@ -257,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument('--prompt_group', type=str, help='Deprecated: single prompt group to apply to all islands', default=None)
     # Parse the arguments
     args = parser.parse_args()
-    island_script = "src/island_temp_script.sh"
+    island_script = ISLAND_TEMP_SCRIPT
     checkpoints = args.checkpoints
 
     def parse_csv(arg_val):
@@ -320,11 +323,12 @@ if __name__ == "__main__":
         job_ids = []
 
         # submit island generation jobs
-        for llm_name, prompt_group in island_specs:
+        for island_num, (llm_name, prompt_group) in enumerate(island_specs, start=1):
             prompt_slug = re.sub(r"[^a-zA-Z0-9_-]", "-", prompt_group)
             print(f"Generating Island {llm_name} with prompts {prompt_group}", flush=True)
             checkpoint_path = os.path.join(checkpoints, f"island_{llm_name}_{prompt_slug}")
-            job_id = submit_run(island_script, ISLANDS_BASH_SCRIPT_TEMPLATE.format(checkpoint_path, global_path, llm_name, prompt_group))
+            island_script_path = island_script.format(ISLAND_NUM=island_num)
+            job_id = submit_run(island_script_path, ISLANDS_BASH_SCRIPT_TEMPLATE.format(checkpoint_path, global_path, llm_name, prompt_group))
             job_ids.append(job_id)
         
         # check island generation jobs for completion
