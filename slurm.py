@@ -20,6 +20,7 @@ class RuntimeConfig:
             os.path.join(self.SOTA_ROOT, "model.py"),
         )
         self.PORT = int(os.getenv("LLMGE_PORT", "8137"))
+        self.LLM_SERVER_BACKEND = os.getenv("LLMGE_SERVER_BACKEND", "vllm")
 
 
 CONFIG = RuntimeConfig()
@@ -162,6 +163,7 @@ echo "launching LLM Server"
 
 # Optional chained submission count to work around walltime limits
 COUNT=${{1:-1}}
+SERVER_BACKEND=${{2:-${{LLMGE_SERVER_BACKEND:-{CONFIG.LLM_SERVER_BACKEND}}}}}
 
 hostname
 
@@ -171,6 +173,7 @@ module load uv
 # Make sure CUDA can see all GPUs
 export CUDA_VISIBLE_DEVICES=0,1
 export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
+export XDG_CACHE_HOME="$UV_CACHE_DIR/xdg"
 mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
@@ -180,13 +183,24 @@ HOSTNAME_FILE=$(pwd)"/hostname.log"
 
 echo "Writing server hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
 echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
-echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT)"
+echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT, backend=$SERVER_BACKEND)"
 
 # Submit the paired island-controller job from here so the two stay in sync
 echo "Submitting island controller (count=$COUNT)"
 sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
-uv run uvicorn server:app --host $SERVER_HOSTNAME --port {CONFIG.PORT} --workers 1
+case "$SERVER_BACKEND" in
+    vllm)
+        uv run --no-project --with "vllm>=0.8.5" --with fastapi --with uvicorn python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port {CONFIG.PORT} --workers 1
+        ;;
+    normal|transformers|baseline)
+        uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port {CONFIG.PORT} --workers 1
+        ;;
+    *)
+        echo "Unknown LLM server backend '$SERVER_BACKEND'. Use 'vllm' or 'normal'." >&2
+        exit 2
+        ;;
+esac
 """
     server_config = sections.get("server-sh", "")
     replace_script_configuration("server.sh", server_config + local_llm_server)

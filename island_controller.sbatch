@@ -23,7 +23,7 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd /home/hice1/<username>/scratch/llm-guided-evolution-infrastructure
+cd /storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure
 
 # Starts running Island Migration with 3 islands (same LLM, three prompt groups)
 uv run python islands_wrapper.py titanic_islands_run \

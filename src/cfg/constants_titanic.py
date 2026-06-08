@@ -17,6 +17,9 @@ TRAIN_FILE = os.path.join(SOTA_ROOT, "eval.py")
 # Where Slurm job outputs are written (matches sbatch --output paths)
 SLURM_OUTPUT_PATH = "run_job_outputs/"
 
+# Where the vLLM server writes per-request latency/token metrics.
+RUN_METRICS_DIR = os.path.join(ROOT_DIR, "run_metrics")
+
 # Prompt templates glob relative to the repository root
 DEFAULT_PROMPT_GROUP = "FixedPrompts"
 PROMPTS = f"templates/{DEFAULT_PROMPT_GROUP}/**/*.txt"
@@ -44,6 +47,7 @@ ISLAND_LLMS = [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_
 ENVIRONMENT_DIR = os.path.join(ROOT_DIR, ".venv")
 SLURM_CONFIG_DIR = os.path.join(ROOT_DIR, "slurm-config/")
 LOCAL_LLM = True
+LLM_SERVER_BACKEND = os.getenv("LLMGE_SERVER_BACKEND", "vllm")
 HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
 
 # Multi-island settings
