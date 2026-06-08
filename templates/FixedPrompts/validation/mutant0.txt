@@ -1,0 +1,39 @@
+python
+class Rectangle:
+    def __init__(self, length: float, width: float):
+        """
+        Initialize a rectangle with the given length and width.
+
+        Args:
+            length (float): The length of the rectangle.
+            width (float): The width of the rectangle.
+
+        Raises:
+            ValueError: If either the length or width is not a positive number.
+        """
+        if length <= 0 or width <= 0:
+            raise ValueError("Length and width must be positive numbers")
+        self.length = length
+        self.width = width
+
+    def area(self) -> float:
+        """
+        Calculate the area of the rectangle.
+
+        Returns:
+            float: The area of the rectangle.
+        """
+        return self.length * self.width
+
+    def perimeter(self) -> float:
+        """
+        Calculate the perimeter of the rectangle.
+
+        Returns:
+            float: The perimeter of the rectangle.
+        """
+        return 2 * (self.length + self.width)
+
+```python
+{}
+```

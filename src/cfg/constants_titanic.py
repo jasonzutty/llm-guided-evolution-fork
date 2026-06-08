@@ -23,6 +23,7 @@ MODEL = "model"
 MODEL_PATH = "/storage/ice-shared/vip-vvk/llm_storage/meta-llama/Llama-3.3-70B-Instruct/"
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models/llmge_models") 
 TRAIN_FILE = os.path.join(SOTA_ROOT, "eval.py") 
+LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "1648"))
 ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
 
 # Where Slurm job outputs are written (matches sbatch --output paths)

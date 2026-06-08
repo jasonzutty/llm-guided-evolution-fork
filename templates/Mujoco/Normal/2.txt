@@ -1,0 +1,8 @@
+Mutate this Mujoco RL gene chunk to improve reward while keeping parameter count reasonable.
+
+The evolved code must remain compatible with PPO("policy_class", HalfCheetah-v4) through train_rl.py.
+
+The current code block:
+```python
+{}
+```

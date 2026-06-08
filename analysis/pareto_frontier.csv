@@ -1,0 +1,4 @@
+gene_id,first_generation,last_generation,appearances,reward,param_count,runtime_min,submission_flag,status,job_id,source_log,is_valid,failure_kind
+xXxRRDSoRcfTVKRxstcNW47yEKd,6,17,12,2154.494208216919,38541.0,20,True,completed,5150031,slurm-5149662.out,True,valid
+xXxITfJ5N7Npl87hC2z4cRDG7s7,14,17,4,1140.050166571316,11085.0,15,True,completed,5152629,slurm-5149662.out,True,valid
+xXxBQd75FDukWNMTWzMXknTvC52,9,17,9,806.6553644149764,1389.0,20,True,completed,5150669,slurm-5149662.out,True,valid

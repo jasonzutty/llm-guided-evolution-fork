@@ -23,12 +23,12 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd /storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure
+cd /storage/ice1/2/5/mgullapalli6/llmGE/mujoco_gp_vip
 
-uv run python islands_wrapper.py titanic_islands_run \
-    --num_islands 2 \
-    --llms llama3 \
-    --prompt_groups "titanic/general,titanic/roleplay"
+# Starts running Island Migration with the default Mujoco prompt group
+uv run python islands_wrapper.py mujoco_rl_output \
+    --num_islands 1 \
+    --llms llama3
 
 if (( COUNT > 1 )); then
     NEXT_COUNT=$((COUNT - 1))

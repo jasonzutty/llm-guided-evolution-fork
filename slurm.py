@@ -69,7 +69,7 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py titanic_test
+uv run python run_improved.py {CONFIG.OUTPUT_DIR}
 """
     replace_script_configuration("run.sh", run_sh)
 
@@ -149,8 +149,11 @@ hostname
 module load cuda
 module load uv
 
-# Make sure CUDA can see all GPUs
-export CUDA_VISIBLE_DEVICES=0,1
+# Respect the GPU visibility selected by Slurm. Hard-coding 0,1 can make
+# PyTorch probe devices outside the allocation on some cluster GPU nodes.
+echo "CUDA_VISIBLE_DEVICES=${{CUDA_VISIBLE_DEVICES:-<unset>}}"
+export USE_TF=0
+export USE_TORCH=1
 export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
 mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"

@@ -1,0 +1,15 @@
+[project]
+name = "llmge-mujoco-eval"
+version = "0.1.0"
+description = "Dedicated uv environment for Mujoco RL evaluation jobs."
+requires-python = ">=3.12, <3.13"
+dependencies = [
+    "numpy>=2.0.2",
+    "torch==2.6.0",
+    "gymnasium[mujoco]>=1.2.3",
+    "mujoco>=3.6.0",
+    "stable-baselines3>=2.7.1",
+    "scikit-learn>=1.7.2",
+    "imageio>=2.37.3",
+    "imageio-ffmpeg>=0.6.0",
+]

@@ -20,6 +20,28 @@ from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf,
                        llm_code_qc, str2bool, generate_augmented_code, 
                        extract_note, clean_code_from_llm, retrieve_base_code)
 
+def validate_generated_chunk(code_from_llm):
+    """Reject common invalid Mujoco/SB3 policy mutations before evaluation."""
+    if DEFAULT_PROMPT_GROUP != "Mujoco/Normal":
+        return True, ""
+
+    forbidden_patterns = [
+        ("def forward(", "overrides ActorCriticPolicy.forward()"),
+        ("def _predict(", "overrides ActorCriticPolicy._predict()"),
+        ("def evaluate_actions(", "overrides ActorCriticPolicy.evaluate_actions()"),
+        ("def get_distribution(", "overrides ActorCriticPolicy.get_distribution()"),
+        ("def predict_values(", "overrides ActorCriticPolicy.predict_values()"),
+        ("self.mlp_extractor =", "replaces SB3's mlp_extractor with an incompatible module"),
+        ("self.mlp_extractor=", "replaces SB3's mlp_extractor with an incompatible module"),
+        ("self.mlp_extractor.", "accesses unstable SB3 mlp_extractor internals"),
+        ("shared_net", "uses removed/unstable SB3 MlpExtractor internals"),
+    ]
+    for pattern, reason in forbidden_patterns:
+        if pattern in code_from_llm:
+            return False, reason
+
+    return True, ""
+
 def augment_network(input_filename='network.py', output_filename='network_x.py', template_txt=None,
                     top_p=0.15, llm_model=LLM_DEEPSEEK, temperature=0.1, apply_quality_control=False):
     
@@ -37,13 +59,21 @@ def augment_network(input_filename='network.py', output_filename='network_x.py',
     with open(fname, 'r') as file:
         template_txt = file.read()
     
-    # add code to be augmented 
-    txt2llm = template_txt.format(code2llm.strip())
+    # Prompt templates use a single literal "{}" marker for the code chunk.
+    # Using str.format would treat JSON/dict examples in the prompt as fields.
+    if "{}" not in template_txt:
+        raise ValueError(f"Prompt template {fname} must contain a literal {{}} code placeholder")
+    txt2llm = template_txt.replace("{}", code2llm.strip(), 1)
     code_from_llm = generate_augmented_code(txt2llm, augment_idx-1, apply_quality_control,
                                             top_p, llm_model, temperature)
     
     if not code_from_llm:
         code_from_llm = txt2llm
+    else:
+        valid_code, invalid_reason = validate_generated_chunk(code_from_llm)
+        if not valid_code:
+            print(f"Rejected generated chunk: {invalid_reason}. Falling back to parent chunk.", flush=True)
+            code_from_llm = code2llm.strip()
 
     note_txt = extract_note(code2llm)
     parts[augment_idx] = f"\n{note_txt}{code_from_llm}\n"

@@ -12,4 +12,4 @@ export CUDA_VISIBLE_DEVICES=0
 export SERVER_HOSTNAME=$(hostname)
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
-uv run python run_improved.py titanic_test
+uv run python run_improved.py mujoco_rl_output

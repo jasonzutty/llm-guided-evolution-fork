@@ -26,8 +26,11 @@ MODEL = "model"
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models/llmge_models") 
 TRAIN_FILE = os.path.join(SOTA_ROOT, "train_cls.py") 
 
+CLUSTER = "ice-hammer"
 LLM_MODEL = 'llama3.3'
+LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "1648"))
 ENVIRONMENT_DIR = os.path.join(ROOT_DIR, ".venv")
+SLURM_CONFIG_DIR = os.path.join(ROOT_DIR, "slurm-config/")
 LOCAL_LLM = True
 HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
 
