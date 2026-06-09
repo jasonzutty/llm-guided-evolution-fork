@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import torch
 import platform
 import yaml
 
@@ -106,14 +105,15 @@ else:
     DELAYED_CHECK = True
 MACOS = platform.system() == "Darwin"
 RUNLINE_AMP = ''
-if torch.mps.is_available():
-    DEVICE = 'mps'
-    MACOS = True
-    RUNLINE_AMP = "-amp"
-elif torch.cuda.is_available():
-    DEVICE = 'cuda'
+# Keep constants import side-effect free. In particular, do not call
+# torch.cuda.is_available() here: server_vllm imports this module before vLLM
+# forks worker processes, and touching CUDA in the parent process can make
+# Slurm/exclusive-process GPUs look busy to the workers.
+if MACOS:
+    DEVICE = os.getenv("LLMGE_DEVICE", "mps")
+    RUNLINE_AMP = "-amp" if DEVICE == "mps" else ""
 else:
-    DEVICE = 'cpu'
+    DEVICE = os.getenv("LLMGE_DEVICE", "cuda")
 
 # resolves to {MODEL}_{gene_id}
 RUNLINE_TMP = '{}_{}'

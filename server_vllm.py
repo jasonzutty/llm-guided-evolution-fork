@@ -20,6 +20,11 @@ from pathlib import Path
 
 # Force vLLM to use spawn to prevent CUDA initialization crashes
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
+# FlashInfer sampling can JIT-compile CUDA extensions at startup/request time.
+# On PACE this has failed in ld with signal 11, so default to vLLM's torch
+# sampler unless the launch environment explicitly opts back in.
+os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
+os.environ.setdefault("VLLM_ATTENTION_BACKEND", "FLASH_ATTN")
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -55,6 +60,10 @@ else:
 ENABLE_PREFIX_CACHING = os.getenv("ENABLE_PREFIX_CACHING", "true").lower() in (
     "true", "1", "yes",
 )
+DISABLE_CUSTOM_ALL_REDUCE = os.getenv(
+    "VLLM_DISABLE_CUSTOM_ALL_REDUCE",
+    "true",
+).lower() in ("true", "1", "yes")
 
 # System prompt — cached via vLLM's automatic prefix caching
 SYSTEM_PROMPT = os.getenv(
@@ -95,6 +104,7 @@ metrics_metadata = {
     "vllm_dtype": VLLM_DTYPE,
     "vllm_quantization": VLLM_QUANTIZATION,
     "prefix_caching": ENABLE_PREFIX_CACHING,
+    "disable_custom_all_reduce": DISABLE_CUSTOM_ALL_REDUCE,
     "requests": [],
 }
 
@@ -188,6 +198,7 @@ def get_llm():
         print(f"[vLLM] dtype={VLLM_DTYPE}", flush=True)
         print(f"[vLLM] quantization={VLLM_QUANTIZATION}", flush=True)
         print(f"[vLLM] enable_prefix_caching={ENABLE_PREFIX_CACHING}", flush=True)
+        print(f"[vLLM] disable_custom_all_reduce={DISABLE_CUSTOM_ALL_REDUCE}", flush=True)
 
         start = time.time()
         llm_kwargs = dict(
@@ -197,6 +208,7 @@ def get_llm():
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
             max_model_len=MAX_MODEL_LEN,
             enable_prefix_caching=ENABLE_PREFIX_CACHING,
+            disable_custom_all_reduce=DISABLE_CUSTOM_ALL_REDUCE,
             trust_remote_code=True,
         )
         if VLLM_QUANTIZATION:

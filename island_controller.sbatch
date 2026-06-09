@@ -1,10 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=IslandsController
-#SBATCH -N1 --ntasks-per-node=16
-#SBATCH --mem-per-gpu=16G
-#SBATCH --time=16:00:00
-#SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
-#SBATCH --gres=gpu:1
+#SBATCH --job-name=Island_controller
+#SBATCH -N1 --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --time=8:00:00
+#SBATCH --output=run_job_outputs/islands/Report_island_controller-%j.out
 #SBATCH -C intel
 # Island controller arguments:
 # $1 (COUNT): Number of remaining restart iterations
@@ -25,10 +24,10 @@ export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 # Change to the repository root
 cd /storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure
 
-uv run python islands_wrapper.py titanic_islands_run \
+uv run python islands_wrapper.py titanic_islands_run2 \
     --num_islands 2 \
     --llms llama3 \
-    --prompt_groups "titanic/general,titanic/roleplay"
+    --prompt_groups "titanic/focused,titanic/general,titanic/roleplay"
 
 if (( COUNT > 1 )); then
     NEXT_COUNT=$((COUNT - 1))
