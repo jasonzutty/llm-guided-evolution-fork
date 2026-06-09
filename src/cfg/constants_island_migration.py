@@ -81,9 +81,10 @@ SLURM_MIXT_TEMPERATURE = 0.1
 SLURM_MIXT_APPLY_QUALITY_CONTROL = True
 SLURM_MIXT_BIT = 8
 
-ISLAND_CONTROLLER_RUN_NAME = "titanic_islands_run"
+ISLAND_CONTROLLER_RUN_NAME = "cifar10_islands_run"
 ISLAND_CONTROLLER_NUM_ISLANDS = 3
 ISLAND_CONTROLLER_LLMS = "llama3"
+# these are titanic oriented prompts, other data sets should consider new prompts
 ISLAND_CONTROLLER_PROMPT_GROUPS = "titanic/focused,titanic/general,titanic/roleplay"
 ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
 

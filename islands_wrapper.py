@@ -262,6 +262,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     island_script = ISLAND_TEMP_SCRIPT
     checkpoints = args.checkpoints
+    # show usage for traceability and debug
+    print(f"Island wrapper run command: islands_wrapper.py {checkpoints} " +\
+          f"--num_islands {args.num_islands} --llms {args.llms} --prompt_groups \"{args.prompt_groups}\" " +\
+          f"--prompt_group {args.prompt_group}")
 
     def parse_csv(arg_val):
         if not arg_val:
@@ -297,9 +301,11 @@ if __name__ == "__main__":
                 island_specs.append((llm, pg))
 
     num_islands = args.num_islands if args.num_islands is not None else len(island_specs)
-    if num_islands != len(island_specs):
+    if num_islands > len(island_specs):
         print(f"num_islands ({num_islands}) does not match derived island specs ({len(island_specs)}). Adjust args or omit num_islands.")
         exit(1)
+    # truncate island spec to match num islands
+    island_specs = island_specs[:num_islands]
 
     if not cli_llms and num_islands > MAX_ISLANDS:
         print("Number of islands exceeds maximum allowed: " + str(MAX_ISLANDS))

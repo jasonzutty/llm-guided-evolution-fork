@@ -15,6 +15,7 @@ SLURM_CONFIG_DIR = os.getenv(
 )
 CLUSTER = os.getenv("LLMGE_CLUSTER", "ice-hammer")
 PORT = int(os.getenv("LLMGE_PORT", "8137"))
+# NOTE: this is for testing, the point-transformers sota folder should be used
 DATA_PATH = os.path.join(ROOT_DIR, "data/titanic")
 SOTA_ROOT = os.getenv("LLMGE_SOTA_ROOT", sota_root)
 SEED_NETWORK = os.getenv(

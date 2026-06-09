@@ -71,11 +71,23 @@ server-sh
 islands
 ------
 #!/bin/bash
-#SBATCH --job-name=Islands
+#SBATCH --job-name=Islands_script
 #SBATCH -N1 --ntasks-per-node=16
-#SBATCH --mem-per-gpu=16G
-#SBATCH --time=16:00:00
+#SBATCH --mem=16G
+#SBATCH --time=8:00:00
 #SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
 #SBATCH --gres=gpu:1
+#SBATCH -C intel
+------
+
+
+island-controller
+------
+#!/bin/bash
+#SBATCH --job-name=Island_controller
+#SBATCH -N1 --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --time=8:00:00
+#SBATCH --output=run_job_outputs/islands/Report_island_controller-%j.out
 #SBATCH -C intel
 ------
