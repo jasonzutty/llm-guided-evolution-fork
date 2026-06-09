@@ -18,16 +18,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
-
-
-      - name: Install dependencies
-        run: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync
-
-      - run: uv run sphinx-build -M html docs/source/ docs/build
+      - name: Build docs
+        run: scripts/workflows/sphinx_deploy.sh
+        shell: bash
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
