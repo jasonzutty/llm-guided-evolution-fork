@@ -7,7 +7,7 @@ islands_bash_script: '#!/bin/bash
 
     #SBATCH --mem=16G
 
-    #SBATCH --time=16:00:00
+    #SBATCH --time=8:00:00
 
     #SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
 
@@ -99,6 +99,8 @@ python_bash_script: '#!/bin/bash
     module load uv
 
     export CUDA_VISIBLE_DEVICES=0
+
+    unset VIRTUAL_ENV
 
     export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
 

@@ -14,7 +14,7 @@ dependencies = [
     "sphinx>=8.2.3",
     "sphinx>=8.2.3",
     "torch==2.6.0",
-    "torchvision",
+    "torchvision==0.21.0",
     "transformers",
     "uvicorn",
     "fastapi",
@@ -31,7 +31,7 @@ dependencies = [
     "imblearn",
     "matplotlib",
     "tensorflow>=2.20.0",
-    "streamlit>=1.58.0",
+
     "jsonschema",
 ]
 

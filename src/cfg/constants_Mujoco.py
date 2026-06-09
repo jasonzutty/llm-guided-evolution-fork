@@ -27,6 +27,7 @@ VARIANT_DIR = os.path.join(SOTA_ROOT, "models")
 SLURM_OUTPUT_PATH = "run_job_outputs/"
 #: The training/evaluation script for RL
 TRAIN_FILE = os.path.join(SOTA_ROOT, "train_rl.py")
+ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
 #: Dedicated uv project used only for Mujoco RL evaluation jobs.
 MUJOCO_EVAL_PROJECT_DIR = os.path.join(SOTA_ROOT, "eval_env")
 #: Keep eval runs configurable without changing the shared project environment.
@@ -36,7 +37,7 @@ MUJOCO_EVAL_MAX_STEPS = int(os.getenv("MUJOCO_EVAL_MAX_STEPS", "1000"))
 
 #: Output directory for intermediate generation data
 OUTPUT_DIR = "mujoco_rl_output"
-PORT = 8137
+PORT = 8169
 
 CLUSTER = "pace-ice"
 LLM_MODEL = 'llama3.3'
@@ -66,6 +67,19 @@ PROMPT_GROUP_TEMPLATE = "templates/{prompt_group}/*.txt"
 PROMPTS = f"templates/{DEFAULT_PROMPT_GROUP}/*.txt"
 CONSTANT_RULES_PATH = "templates/Mujoco/ConstantRules.txt"
 
+SLURM_MIXT_INPUT_X = SEED_NETWORK
+SLURM_MIXT_INPUT_Y = os.path.join(SOTA_ROOT, "models/Menghao/network_x.py")
+SLURM_MIXT_OUTPUT = os.path.join(SOTA_ROOT, "models/Menghao/network_z.py")
+SLURM_MIXT_TOP_P = 0.15
+SLURM_MIXT_TEMPERATURE = 0.1
+SLURM_MIXT_APPLY_QUALITY_CONTROL = True
+SLURM_MIXT_BIT = 8
+
+ISLAND_CONTROLLER_RUN_NAME = "mujoco_islands_run"
+ISLAND_CONTROLLER_NUM_ISLANDS = 1
+ISLAND_CONTROLLER_LLMS = "llama3"
+ISLAND_CONTROLLER_PROMPT_GROUPS = "Mujoco/Normal"
+
 QC_CHECK_BOOL = False
 HUGGING_FACE_BOOL = False
 INFERENCE_SUBMISSION = True
@@ -82,7 +96,7 @@ else:
 
 #: Whether host uses macOS
 MACOS = False
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cuda' if getattr(torch, "cuda", None) is not None and torch.cuda.is_available() else 'cpu'
 
 # Available LLM identifiers.
 LLM_QWEN = 'qwen25'
@@ -96,7 +110,7 @@ ISLAND_LLMS = [LLM_LLAMA3]
 MAX_ISLANDS = len(ISLAND_LLMS)
 
 #: Python run command (uses uv for dependency management)
-UV_PYTHON = f"uv run --no-sync --project {MUJOCO_EVAL_PROJECT_DIR} python"
+UV_PYTHON = f"env -u VIRTUAL_ENV uv run --no-sync --project {MUJOCO_EVAL_PROJECT_DIR} python"
 
 # resolves to {MODEL}_{gene_id}; train_rl.py expects models.network_<gene_id>
 RUNLINE_TMP = "{}_{}"
@@ -107,6 +121,7 @@ EVAL_RUNLINE = (
     f"-eval_episodes {MUJOCO_EVAL_EPISODES} "
     f"-eval_max_steps {MUJOCO_EVAL_MAX_STEPS}"
 )
+EVAL_NO_PROGRESS_TIMEOUT_SECONDS = int(os.getenv("LLMGE_EVAL_NO_PROGRESS_TIMEOUT_SECONDS", str(40 * 60)))
 
 #: LLM GPU constraint string for SLURM
 LLM_GPU = 'nvidia-gpu'
@@ -126,6 +141,7 @@ hostname
 module load cuda
 module load uv
 export CUDA_VISIBLE_DEVICES=0
+unset VIRTUAL_ENV
 
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 export HF_TOKEN="${{HF_TOKEN}}"

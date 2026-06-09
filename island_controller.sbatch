@@ -1,10 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=IslandsController
-#SBATCH -N1 --ntasks-per-node=16
-#SBATCH --mem-per-gpu=16G
-#SBATCH --time=16:00:00
-#SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
-#SBATCH --gres=gpu:1
+#SBATCH --job-name=Island_controller
+#SBATCH -N1 --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --time=8:00:00
+#SBATCH --output=run_job_outputs/islands/Report_island_controller-%j.out
 #SBATCH -C intel
 # Island controller arguments:
 # $1 (COUNT): Number of remaining restart iterations
@@ -23,12 +22,12 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd /storage/ice1/2/5/mgullapalli6/llmGE/mujoco_gp_vip
+cd /storage/ice1/2/5/mgullapalli6/llm-guided-evolution-infrastructure
 
-# Starts running Island Migration with the default Mujoco prompt group
-uv run python islands_wrapper.py mujoco_rl_output \
+uv run python islands_wrapper.py mujoco_islands_run \
     --num_islands 1 \
-    --llms llama3
+    --llms llama3 \
+    --prompt_groups "Mujoco/Normal"
 
 if (( COUNT > 1 )); then
     NEXT_COUNT=$((COUNT - 1))

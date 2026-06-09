@@ -69,7 +69,7 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py {CONFIG.OUTPUT_DIR}
+uv run python run_improved.py {constants.OUTPUT_DIR}
 """
     replace_script_configuration("run.sh", run_sh)
 
@@ -99,6 +99,7 @@ hostname
 module load cuda
 module load uv
 export CUDA_VISIBLE_DEVICES=0
+unset VIRTUAL_ENV
 export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
 mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
