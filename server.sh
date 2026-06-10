@@ -3,19 +3,24 @@
 #SBATCH -t 8:00:00
 #SBATCH --nodes=1
 #SBATCH -G 2
-#SBATCH -C "H100"
+#SBATCH -C "H200"
 #SBATCH --mem 160G
 #SBATCH -c 16
 #SBATCH --output=run_job_outputs/server/slurm-%j.out
 echo "launching LLM Server"
-
 # Optional chained submission count to work around walltime limits
 COUNT=${1:-1}
+
+# Backend selection:
+# 1) Positional argument $2
+# 2) Env var LLMGE_SERVER_BACKEND
+# 3) Python constants.LLM_SERVER_BACKEND (derived from USE_VLLM)
 SERVER_BACKEND=${2:-${LLMGE_SERVER_BACKEND:-vllm}}
+
+# vLLM package (only used if SERVER_BACKEND=vllm)
 VLLM_PACKAGE=${VLLM_PACKAGE:-vllm==0.8.5}
 
 hostname
-
 module load cuda
 module load uv
 
@@ -24,34 +29,31 @@ module load uv
 export CUDA_DEVICE_ORDER="${CUDA_DEVICE_ORDER:-PCI_BUS_ID}"
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1}"
 
-# vLLM tensor parallelism uses NCCL even on one node. On PACE GPU nodes, NCCL's
-# default peer/IB path can fail during communicator init; these defaults keep
-# traffic on the local node and avoid direct CUDA peer setup unless overridden.
-export NCCL_DEBUG="${NCCL_DEBUG:-WARN}"
-export NCCL_IB_DISABLE="${NCCL_IB_DISABLE:-1}"
-export NCCL_P2P_DISABLE="${NCCL_P2P_DISABLE:-1}"
-export NCCL_SHM_DISABLE="${NCCL_SHM_DISABLE:-0}"
-export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
-export VLLM_DISABLE_CUSTOM_ALL_REDUCE="${VLLM_DISABLE_CUSTOM_ALL_REDUCE:-true}"
-
-export TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-2}"
+# Cache dirs (used for both backends)
 export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
 export XDG_CACHE_HOME="$UV_CACHE_DIR/xdg"
 export TORCHINDUCTOR_CACHE_DIR="$XDG_CACHE_HOME/torchinductor"
 export FLASHINFER_CACHE_DIR="$XDG_CACHE_HOME/flashinfer"
 mkdir -p "$UV_CACHE_DIR"
 mkdir -p "$XDG_CACHE_HOME" "$TORCHINDUCTOR_CACHE_DIR" "$FLASHINFER_CACHE_DIR"
+
 echo "Using UV cache: $UV_CACHE_DIR"
 echo "Using XDG cache: $XDG_CACHE_HOME"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+
+# vLLM-specific env: only meaningful if SERVER_BACKEND=vllm
+export NCCL_DEBUG="${NCCL_DEBUG:-WARN}"
+export NCCL_IB_DISABLE="${NCCL_IB_DISABLE:-1}"
+export NCCL_P2P_DISABLE="${NCCL_P2P_DISABLE:-1}"
+export NCCL_SHM_DISABLE="${NCCL_SHM_DISABLE:-0}"
+export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
+export VLLM_DISABLE_CUSTOM_ALL_REDUCE="${VLLM_DISABLE_CUSTOM_ALL_REDUCE:-true}"
+export TENSOR_PARALLEL_SIZE="${TENSOR_PARALLEL_SIZE:-2}"
 echo "NCCL_IB_DISABLE=$NCCL_IB_DISABLE NCCL_P2P_DISABLE=$NCCL_P2P_DISABLE NCCL_SHM_DISABLE=$NCCL_SHM_DISABLE"
 echo "TENSOR_PARALLEL_SIZE=$TENSOR_PARALLEL_SIZE"
 echo "VLLM_DISABLE_CUSTOM_ALL_REDUCE=$VLLM_DISABLE_CUSTOM_ALL_REDUCE"
 
-# FlashInfer sampling JIT has been failing intermittently on PACE with
-# ld signal 11 while building ~/.cache/flashinfer/.../sampling.so.
-# Prefer vLLM's torch sampler and keep any unavoidable FlashInfer cache
-# local to this Slurm job.
+# FlashInfer tuning (again, only relevant if vLLM path is used)
 export VLLM_USE_FLASHINFER_SAMPLER="${VLLM_USE_FLASHINFER_SAMPLER:-0}"
 export VLLM_ATTENTION_BACKEND="${VLLM_ATTENTION_BACKEND:-FLASH_ATTN}"
 echo "VLLM_USE_FLASHINFER_SAMPLER=$VLLM_USE_FLASHINFER_SAMPLER"
@@ -59,11 +61,10 @@ echo "VLLM_ATTENTION_BACKEND=$VLLM_ATTENTION_BACKEND"
 echo "FLASHINFER_CACHE_DIR=$FLASHINFER_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-
 HOSTNAME_FILE=$(pwd)"/hostname.log"
-
 echo "Writing server hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
 echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
+
 echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT, backend=$SERVER_BACKEND)"
 echo "Using vLLM package: $VLLM_PACKAGE"
 
@@ -73,7 +74,7 @@ sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
 case "$SERVER_BACKEND" in
     vllm)
-        uv run --no-project --with "$VLLM_PACKAGE" --with fastapi --with uvicorn python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port 2244 --workers 1
+        uv run --no-project --with "$VLLM_PACKAGE" --with fastapi --with uvicorn             python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port 2244 --workers 1
         ;;
     normal|transformers|baseline)
         uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 2244 --workers 1
@@ -83,3 +84,4 @@ case "$SERVER_BACKEND" in
         exit 2
         ;;
 esac
+

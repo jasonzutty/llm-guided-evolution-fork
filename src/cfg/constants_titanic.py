@@ -51,6 +51,8 @@ LLM_GEMMA3 = 'gemma3'
 LLM_DEEPSEEK = 'deepseek'
 LLM_GEMINI = 'gemini'
 
+USE_VLLM = os.getenv("LLMGE_USE_VLLM", "1").lower() in ("1", "true", "yes")
+
 # LLMs allowed for island runs
 ISLAND_LLMS = [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_GEMMA3, LLM_GEMINI]
 

@@ -16,12 +16,6 @@ mkdir -p ${output_dir}
 echo "summarizing slurm output"
 uv run python analysis/scripts/summarize_slurm.py --input ${input_log_dir} --output ${output_dir}/slurm_summary.csv
 
-echo "getting run inventory"
-uv run python analysis/scripts/inventory_runs.py --input . --output ${output_dir}/run_inventory.csv
-
-echo "extrating metrics"
-uv run python analysis/scripts/extract_metrics.py --input . --output ${output_dir}/run_metrics.csv
-
 echo "building entity summary"
 uv run python analysis/scripts/entity_metrics_summary.py --input ${output_dir}/run_metrics.csv --output ${output_dir}/entity_metrics_summary.csv --report-output ${output_dir}/entity_metrics_report.md
 
