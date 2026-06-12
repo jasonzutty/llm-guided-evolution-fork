@@ -36,13 +36,19 @@ def test_train(tmp_path):
     )
 
     # Stream output line by line (shows progress bar from training script)
+    output_lines = []
     for line in process.stdout:
         print(line, end='', flush=True)
+        output_lines.append(line)
 
     process.wait()
 
     if process.returncode != 0:
         raise subprocess.CalledProcessError(process.returncode, process.args)
+
+    # Check that training completed successfully
+    full_output = ''.join(output_lines)
+    assert 'job done' in full_output.lower(), "Training did not complete - 'job done' not found in output"
 
     elapsed = time.time() - start_time
     print(f"\n{'='*80}")
