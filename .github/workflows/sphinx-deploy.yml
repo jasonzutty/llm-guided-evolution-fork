@@ -35,8 +35,6 @@ jobs:
 
       - name: Deploy
         if: github.event_name == 'push' && github.repository == 'jasonzutty/llm-guided-evolution-fork'
-
-      - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
