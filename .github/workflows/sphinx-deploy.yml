@@ -3,7 +3,7 @@ name: GitHub Pages
 on:
   push:
     branches:
-      - main
+      - new_main
   pull_request:
 
 jobs:
@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pages: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +25,16 @@ jobs:
       - name: Build docs
         run: scripts/workflows/sphinx_deploy.sh
         shell: bash
+
+      - name: Downloadable Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloadable-site-build
+          path: docs/build/html/ # The directory where the built files live
+
+
+      - name: Deploy
+        if: github.event_name == 'push' && github.repository == 'jasonzutty/llm-guided-evolution-fork
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
