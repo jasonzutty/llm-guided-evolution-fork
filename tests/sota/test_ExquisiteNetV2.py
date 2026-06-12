@@ -8,6 +8,7 @@ def test_train_quick(tmp_path):
     """
     Quick smoke test - trains for only a few batches to verify it works.
     Takes ~10-20 seconds instead of hours.
+    Uses large batch size and high validation ratio to minimize training batches.
     """
     print("\n" + "="*80)
     print("Starting ExquisiteNetV2 QUICK smoke test...")
