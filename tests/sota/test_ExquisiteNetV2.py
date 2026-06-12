@@ -25,7 +25,7 @@ def test_train(tmp_path):
             '-seed', '21',
             '-val_r', '0.2',
             '-save_dir', str(tmp_path),
-            '-worker', '0',
+            '-worker', '1',
             '-epoch', '1',
             '-imgsz', '32',
         ],
@@ -56,4 +56,4 @@ def test_train(tmp_path):
     print(f"{'='*80}\n")
 
 if __name__ == '__main__':
-    test_train()
+    test_train("/home/hice1/mgullapalli6/scratch/0/llm-guided-evolution-infrastructure/tests/sota/results")
