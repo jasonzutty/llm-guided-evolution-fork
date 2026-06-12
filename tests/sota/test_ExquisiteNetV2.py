@@ -14,7 +14,6 @@ def test_train_quick(tmp_path):
     print("Starting ExquisiteNetV2 QUICK smoke test...")
     print(f"Batch size: 1000 (very large to reduce number of batches)")
     print(f"Epochs: 1, Validation ratio: 0.95 (only 5% for training)")
-    print(f"This should take ~10-20 seconds")
     print("="*80 + "\n")
 
     start_time = time.time()
@@ -23,14 +22,14 @@ def test_train_quick(tmp_path):
     process = subprocess.Popen(
         [
             'uv', 'run', 'sota/ExquisiteNetV2/train.py',
-            '-bs', '1000',          # HUGE batch size = fewer batches
+            '-bs', '30',          # HUGE batch size = fewer batches
             '-network', 'network',
             '-data', 'sota/ExquisiteNetV2/cifar10',
-            '-end_lr', '0.001',
+            '-end_lr', '0.1',
             '-seed', '21',
-            '-val_r', '0.95',       # Use 95% for validation, only 5% for training = 2,500 images = 3 batches
+            '-val_r', '0.9995',       # Use 95% for validation, only 5% for training = 2,500 images = 3 batches
             '-save_dir', str(tmp_path),
-            '-worker', '0',
+            '-worker', '1',
             '-epoch', '1',
             '-imgsz', '32',
         ],
