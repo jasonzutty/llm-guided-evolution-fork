@@ -32,4 +32,7 @@ install_uv
 uv sync
 prepare_cifar10
 
-uv run pytest
+# Disable LLM server auto-start for tests that don't need it (like ExquisiteNetV2)
+# Use -v for verbose output and -s to disable output capture (show print statements)
+export LLMGE_AUTO_START_SERVER=0
+uv run pytest -v -s
