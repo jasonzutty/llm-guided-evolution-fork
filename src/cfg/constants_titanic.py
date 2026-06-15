@@ -52,6 +52,12 @@ LLM_DEEPSEEK = 'deepseek'
 LLM_GEMINI = 'gemini'
 
 USE_VLLM = os.getenv("LLMGE_USE_VLLM", "1").lower() in ("1", "true", "yes")
+USE_LOAD_BALANCING = os.getenv("LLMGE_USE_LOAD_BALANCING", "0").lower() in ("1", "true", "yes")
+
+# Load balancing configuration
+SERVER_REGISTRY_FILE = os.getenv("SERVER_REGISTRY_FILE", os.path.join(ROOT_DIR, "servers.json"))
+LOAD_BALANCER_PORT = int(os.getenv("LOAD_BALANCER_PORT", "9000"))
+LOADBALANCER_LOG_FILE = os.getenv("LOADBALANCER_LOG_FILE", os.path.join(ROOT_DIR, "loadbalancer.log"))
 
 # LLMs allowed for island runs
 ISLAND_LLMS = [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_GEMMA3, LLM_GEMINI]
@@ -122,6 +128,38 @@ RUNLINE_TMP = '{}_{}'
 EVAL_RUNLINE = "uv run python {} --model {} --variant_dir {VARIANT_DIR}"
 # Kill evaluation jobs that do not produce a terminal result in this window.
 EVAL_NO_PROGRESS_TIMEOUT_SECONDS = int(os.getenv("LLMGE_EVAL_NO_PROGRESS_TIMEOUT_SECONDS", str(40 * 60)))
+
+# Configuration validation: Check for vLLM-specific configs when USE_VLLM is False
+if not USE_VLLM:
+    _vllm_specific_vars = {
+        "TENSOR_PARALLEL_SIZE": os.getenv("TENSOR_PARALLEL_SIZE"),
+        "GPU_MEMORY_UTILIZATION": os.getenv("GPU_MEMORY_UTILIZATION"),
+        "MAX_MODEL_LEN": os.getenv("MAX_MODEL_LEN"),
+        "VLLM_DTYPE": os.getenv("VLLM_DTYPE"),
+        "VLLM_QUANTIZATION": os.getenv("VLLM_QUANTIZATION"),
+        "ENABLE_PREFIX_CACHING": os.getenv("ENABLE_PREFIX_CACHING"),
+        "VLLM_DISABLE_CUSTOM_ALL_REDUCE": os.getenv("VLLM_DISABLE_CUSTOM_ALL_REDUCE"),
+        "VLLM_WORKER_MULTIPROC_METHOD": os.getenv("VLLM_WORKER_MULTIPROC_METHOD"),
+        "VLLM_USE_FLASHINFER_SAMPLER": os.getenv("VLLM_USE_FLASHINFER_SAMPLER"),
+        "VLLM_ATTENTION_BACKEND": os.getenv("VLLM_ATTENTION_BACKEND"),
+    }
+
+    _set_vllm_vars = {k: v for k, v in _vllm_specific_vars.items() if v is not None}
+
+    if _set_vllm_vars:
+        _error_msg = (
+            "Configuration Error: vLLM-specific environment variables are set, but USE_VLLM=False.\n"
+            f"The following vLLM-specific variables are configured:\n"
+        )
+        for var, val in _set_vllm_vars.items():
+            _error_msg += f"  - {var}={val}\n"
+        _error_msg += (
+            "\nTo fix this issue, either:\n"
+            "  1. Set LLMGE_USE_VLLM=1 to enable vLLM, or\n"
+            "  2. Unset the vLLM-specific environment variables\n"
+        )
+        raise ValueError(_error_msg)
+
 """
 Evolution Constants/Params
 """

@@ -65,6 +65,25 @@ HOSTNAME_FILE=$(pwd)"/hostname.log"
 echo "Writing server hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
 echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
 
+# Load balancing configuration
+export LLMGE_USE_LOAD_BALANCING=${LLMGE_USE_LOAD_BALANCING:-false}
+export SERVER_REGISTRY_FILE=${SERVER_REGISTRY_FILE:-/home/mgullapalli6/scratch/llm-guided-evolution-infrastructure/servers.json}
+export LOAD_BALANCER_PORT=${LOAD_BALANCER_PORT:-9000}
+
+if [ "$LLMGE_USE_LOAD_BALANCING" = "true" ]; then
+    echo "Load balancing ENABLED"
+    echo "  Registry file: $SERVER_REGISTRY_FILE"
+    echo "  Load balancer port: $LOAD_BALANCER_PORT"
+
+    # Initialize registry file if it doesn't exist
+    if [ ! -f "$SERVER_REGISTRY_FILE" ]; then
+        echo "Creating empty server registry: $SERVER_REGISTRY_FILE"
+        echo '{"servers": []}' > "$SERVER_REGISTRY_FILE"
+    fi
+else
+    echo "Load balancing DISABLED"
+fi
+
 echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT, backend=$SERVER_BACKEND)"
 echo "Using vLLM package: $VLLM_PACKAGE"
 
