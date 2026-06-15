@@ -22,7 +22,7 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd /home/mgullapalli6/scratch/llm-guided-evolution-infrastructure
+cd /storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure
 
 uv run python islands_wrapper.py titanic_islands_run2 \
     --num_islands 2 \

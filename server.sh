@@ -67,7 +67,7 @@ echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
 
 # Load balancing configuration
 export LLMGE_USE_LOAD_BALANCING=${LLMGE_USE_LOAD_BALANCING:-false}
-export SERVER_REGISTRY_FILE=${SERVER_REGISTRY_FILE:-/home/mgullapalli6/scratch/llm-guided-evolution-infrastructure/servers.json}
+export SERVER_REGISTRY_FILE=${SERVER_REGISTRY_FILE:-/storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure/servers.json}
 export LOAD_BALANCER_PORT=${LOAD_BALANCER_PORT:-9000}
 
 if [ "$LLMGE_USE_LOAD_BALANCING" = "true" ]; then
