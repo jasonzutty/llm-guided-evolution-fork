@@ -12,6 +12,7 @@ echo "This job will coordinate island controller without starting LLM inference"
 
 # Optional chained submission count to work around walltime limits
 COUNT=${1:-1}
+SUBMIT_ISLAND_CONTROLLER=${SUBMIT_ISLAND_CONTROLLER:-1}
 
 hostname
 module load uv
@@ -26,8 +27,18 @@ HOSTNAME_FILE=$(pwd)"/hostname.log"
 echo "Writing dummy hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
 echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
 
+<<<<<<< HEAD
 echo "Submitting island controller (count=$COUNT) in random mode"
 sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+=======
+if [ "$SUBMIT_ISLAND_CONTROLLER" = "1" ]; then
+    # Submit the paired island-controller job from here so the two stay in sync.
+    echo "Submitting island controller (count=$COUNT)"
+    sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+else
+    echo "Skipping island controller submission"
+fi
+>>>>>>> MosesMerge_uncorrupted
 
 # Keep this job alive to maintain coordination
 # In random mode, this acts as a coordinator rather than a server

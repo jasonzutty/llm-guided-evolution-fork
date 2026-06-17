@@ -30,6 +30,17 @@ This code has been tested on Python 3.12
 
 If you wish to use features with Google's Gemini, please follow the instructions for [Setting Up an API Key](https://ai.google.dev/gemini-api/docs/api-key)
 
+### GitHub Actions Workflows
+
+GitHub Actions workflow files in `.github/workflows/` are intentionally thin wrappers. The shell logic they run lives in `scripts/workflows/` so CI behavior can be tested and updated outside YAML:
+
+- `.github/workflows/python-app.yml` runs `scripts/workflows/python_app.sh`
+- `.github/workflows/sphinx-deploy.yml` runs `scripts/workflows/sphinx_deploy.sh`
+- `.github/workflows/llmge_slurm.yml` runs `scripts/workflows/llmge_slurm.sh`
+- `.github/workflows/upload_test_report.yml` runs `scripts/workflows/upload_test_report.sh`
+
+When changing CI behavior, update the matching script in `scripts/workflows/` first and keep the YAML focused on triggers, permissions, runner selection, artifacts, and deployment.
+
 ______
 
 ______

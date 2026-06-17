@@ -2,8 +2,8 @@ name: Publish XML report history to GitHub Pages
 
 on:
   workflow_run:
-    workflows: [ "Submit Slurm Job" ]
-    types: [ completed ]
+    workflows: ["Submit Slurm Job"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -19,124 +19,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download artifact from triggering workflow run via REST API
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          API_URL: ${{ github.api_url }}
-        run: |
-          set -euo pipefail
-
-          mkdir -p downloaded-report
-
-          echo "Listing artifacts for run $RUN_ID"
-
-          ARTIFACTS_JSON=$(curl -fsSL \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$API_URL/repos/$REPO/actions/runs/$RUN_ID/artifacts")
-
-          echo "$ARTIFACTS_JSON" > artifacts.json
-
-          ARTIFACT_ID=$(python3 - <<'PY'
-          import json
-          with open("artifacts.json", "r", encoding="utf-8") as f:
-              data = json.load(f)
-          for a in data.get("artifacts", []):
-              if a.get("name") == "junit-report":
-                  print(a["id"])
-                  break
-          PY
-          )
-
-          if [ -z "${ARTIFACT_ID:-}" ]; then
-            echo "Artifact junit-report not found for run $RUN_ID"
-            exit 1
-          fi
-
-          echo "Found artifact id: $ARTIFACT_ID"
-
-          curl -fL \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$API_URL/repos/$REPO/actions/artifacts/$ARTIFACT_ID/zip" \
-            -o downloaded-report/junit-report.zip
-
-          unzip -o downloaded-report/junit-report.zip -d downloaded-report
-
-      - name: Inspect downloaded files
-        shell: bash
-        run: |
-          ls -R downloaded-report && test -f downloaded-report/report.xml
-
-      - name: Download doc suggestions artifact
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          API_URL: ${{ github.api_url }}
-        run: |
-          ARTIFACTS_JSON=$(curl -fsSL \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$API_URL/repos/$REPO/actions/runs/$RUN_ID/artifacts")
-
-          ARTIFACT_ID=$(echo "$ARTIFACTS_JSON" | python3 -c '
-          import json,sys
-          data = json.load(sys.stdin)
-          for a in data.get("artifacts", []):
-              if a.get("name") == "doc-suggestions":
-                  print(a["id"])
-                  break
-          ')
-
-          if [ -n "${ARTIFACT_ID:-}" ]; then
-            curl -fL \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "$API_URL/repos/$REPO/actions/artifacts/$ARTIFACT_ID/zip" \
-              -o downloaded-report/doc-suggestions.zip
-            unzip -o downloaded-report/doc-suggestions.zip -d downloaded-report || true
-          else
-            echo "[]" > downloaded-report/doc_suggestions.json
-          fi
-
-      - name: Collect metadata from triggering run
-        id: meta
-        shell: bash
-        env:
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
-          ACTOR: ${{ github.event.workflow_run.actor.login }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          REPO: ${{ github.repository }}
-          SERVER_URL: ${{ github.server_url }}
-          EVENT_JSON: ${{ toJson(github.event.workflow_run) }}
-        run: |
-          UTC_TIME="$(date -u +'%Y-%m-%d_%H-%M-%S')"
-          DISPLAY_TIME="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-          RUN_DIR="runs/${UTC_TIME}_run-${RUN_NUMBER}"
-
-          COMMIT_TITLE="$(git log -1 --pretty=%s "$HEAD_SHA")"
-          COMMIT_MESSAGE="$(git log -1 --pretty=%B "$HEAD_SHA")"
-          COMMIT_SHORT_SHA="$(git rev-parse --short "$HEAD_SHA")"
-
-          {
-            echo "utc_time=$UTC_TIME"
-            echo "display_time=$DISPLAY_TIME"
-            echo "run_dir=$RUN_DIR"
-            echo "commit_title<<EOF"
-            echo "$COMMIT_TITLE"
-            echo "EOF"
-            echo "commit_message<<EOF"
-            echo "$COMMIT_MESSAGE"
-            echo "EOF"
-            echo "commit_short_sha=$COMMIT_SHORT_SHA"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         with:
@@ -144,77 +26,22 @@ jobs:
           path: gh-pages
         continue-on-error: true
 
-      - name: Initialize gh-pages if missing
-        shell: bash
-        run: |
-          if [ ! -d gh-pages/.git ]; then
-            rm -rf gh-pages
-            mkdir gh-pages
-            cd gh-pages
-            git init
-            git checkout -b gh-pages
-          fi
-
-      - name: Copy report and rebuild Pages index
-        shell: bash
+      - name: Publish report history
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
           RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
           ACTOR: ${{ github.event.workflow_run.actor.login }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          REPO: ${{ github.repository }}
           SERVER_URL: ${{ github.server_url }}
-          DISPLAY_TIME: ${{ steps.meta.outputs.display_time }}
-          RUN_DIR: ${{ steps.meta.outputs.run_dir }}
-          COMMIT_TITLE: ${{ steps.meta.outputs.commit_title }}
-          COMMIT_MESSAGE: ${{ steps.meta.outputs.commit_message }}
-          COMMIT_SHORT_SHA: ${{ steps.meta.outputs.commit_short_sha }}
-        run: |
-          mkdir -p "gh-pages/${RUN_DIR}"
-          cp downloaded-report/report.xml "gh-pages/${RUN_DIR}/report.xml"
-          if [ -f downloaded-report/doc_suggestions.json ]; then
-            cp downloaded-report/doc_suggestions.json "gh-pages/${RUN_DIR}/doc_suggestions.json"
-          else
-            echo "[]" > "gh-pages/${RUN_DIR}/doc_suggestions.json"
-          fi
-
-          cat > "gh-pages/${RUN_DIR}/metadata.json" <<EOF
-          {
-            "time": "${DISPLAY_TIME}",
-            "user": "${ACTOR}",
-            "run_id": "${RUN_ID}",
-            "run_number": "${RUN_NUMBER}",
-            "commit_sha": "${HEAD_SHA}",
-            "commit_short_sha": "${COMMIT_SHORT_SHA}",
-            "commit_title": $(python3 -c 'import json,os; print(json.dumps(os.environ["COMMIT_TITLE"]))'),
-            "commit_message": $(python3 -c 'import json,os; print(json.dumps(os.environ["COMMIT_MESSAGE"]))'),
-            "report_path": "${RUN_DIR}/report.xml",
-            "actions_url": "${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}",
-            "commit_url": "${SERVER_URL}/${REPO}/commit/${HEAD_SHA}"
-          }
-          EOF
-
-          python3 <<'PY'
-          import json, html
-          from pathlib import Path
-
-          root = Path("gh-pages")
-          runs_dir = root / "runs"
-          runs_dir.mkdir(parents=True, exist_ok=True)
-
-          (root / ".nojekyll").write_text("", encoding="utf-8")
-          runs_list = [p.name for p in sorted(runs_dir.glob("*"), reverse=True) if p.is_dir()]
-          (root / "runs" / "runs_list.json").write_text(json.dumps(runs_list), encoding="utf-8")
-          PY
-
-      - name: Commit and push site history
+          API_URL: ${{ github.api_url }}
+        run: scripts/workflows/upload_test_report.sh
         shell: bash
+
+      - name: Push site history
         run: |
           cd gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          git diff --cached --quiet && exit 0
-          git commit -m "Add report for run ${{ github.event.workflow_run.run_number }}"
           git pull --rebase origin gh-pages || true
           git push origin HEAD:gh-pages
+        shell: bash

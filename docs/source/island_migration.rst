@@ -17,7 +17,7 @@ To get started with Island Migration, follow these steps:
 
 1. **Clone the Repository**: Clone the Island Migration repository from GitHub.
 
-    ``git clone https://github.com/heuryn/llm-guided-evolution-Island-Migration.git``
+    ``git clone https://github.com/jasonzutty/llm-guided-evolution-fork``
 
 2. **Install uv**: Instructions for installing ``uv`` can be found in the `uv documentation <https://github.com/astral-sh/uv>`_.
 
@@ -29,21 +29,13 @@ To get started with Island Migration, follow these steps:
 
     ``uv sync``
 
-5. **Configure the Environment and run scripts**: Set up your environment variables and configurations as needed. The files that will need to be configured are:
+5. **Symlink configs**: Symlink the right config file to constants.
 
-    ``src/cfg/constants.py``
+    ``ln -sf constants_island_migration.py src/cfg/constants.py``
 
-    ``src/cfg/pace_ice_scripts.py``
-    
-    ``src/cfg/icehammer_scripts.py``
-
-    ``icehammer_island_controller.sbatch``
-
-    ``pace_ice_island_controller.sbatch``
-
-7. **Run the Evolution**: Execute the controller script to start the evolutionary process with island migration.
-
-    ``uv run sbatch <cluster>_island_controller.sbatch``
+6. **Run the pipeline**, run slurm to set shell scripts and then run the pipeline.
+    ``uv run slurm.py``
+    ``sbatch server.sh -N`` (number of eras: generations * 5)
 
 
 

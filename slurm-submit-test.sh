@@ -31,8 +31,8 @@ uv sync
 # Run tests inside the uv-managed environment and generate JUnit XML
 #v run pytest tests/test_*.py --junitxml=tests/results/report.xml
 
-#Added -v and the capture option  for verbose output and to allow print statement from benchmark test to display in xml report and slurm output 
-uv run pytest tests/test_*.py -v --capture=tee-sys --junitxml=tests/results/report.xml
+#Added -v and the capture option  for verbose output and to allow print statement from benchmark test to display in xml report and slurm output
+uv run pytest tests/ -v --capture=tee-sys --junitxml=tests/results/report.xml
 
 echo "==== SLURM JOB END ===="
 date
