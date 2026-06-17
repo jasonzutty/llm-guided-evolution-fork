@@ -11,7 +11,8 @@ from torch import bfloat16, float16
 from utils.privit import *
 from cfg.constants import *
 from utils.print_utils import *
-
+from utils.rag_metrics import record_metric
+from rag.runtime import get_runtime
 
 
 from typing import Optional
@@ -81,50 +82,25 @@ def get_llm_code_generator(llm_model):
             llm_code_generator = submit_mixtral_hf
         qc_func = llm_code_qc_hf
     return llm_code_generator, qc_func
-
-def generate_augmented_code(txt2llm, augment_idx, apply_quality_control, top_p, llm_model, temperature):
-    """Generates augmented code using Mixtral."""
-    print("LLM being used: ", llm_model)
-    box_print("PROMPT TO LLM", print_bbox_len=60, new_line_end=False)
-    print(txt2llm, flush=True)
+def _augment_template_with_rag(template_text: str, mutation_label: str | None, query_code: str | None = None) -> str:
+    """Augment prompt template with RAG-retrieved context."""
+    if not RAG_ENABLED:
+        return template_text
     
-    llm_code_generator, qc_func = get_llm_code_generator(llm_model)
+    runtime = get_runtime()
+    augmented, retrieved = runtime.enhance_template(
+        template=template_text,
+        mutation_type=mutation_label,
+        query_code=query_code
+    )
     
-    if apply_quality_control:
-        base_code = retrieve_base_code(augment_idx)
-        code_from_llm, generate_text = llm_code_generator(txt2llm, return_gen=True, top_p=top_p, temperature=temperature)
-        temp, counter = None, 0 #default to run the quality control
-        while counter < max_gen_attempts and (temp not in ["NC", "OOT", "MS", "ERROR"]): #counter to deal with stubborn 
-            if temp == "NC": #regenerate based on error
-                prefix = "The code you generated did not contain a code output of the changes you mentioned. Make sure to include the altered code in your output.\n"
-                code_from_llm, generate_text = llm_code_generator(prefix + txt2llm, return_gen=True, top_p=top_p, temperature=temperature)
-            elif temp == "OOT":
-                prefix = "The output you gave was cut short due to a limited number of tokens. Shorten your output to just include the altered code without the explanation.\n"
-                code_from_llm, generate_text = llm_code_generator(prefix + txt2llm, return_gen=True, top_p=top_p, temperature=temperature)
-            elif temp == "MS":
-                prefix = "The code you generated was in multiple segments. When you output your altered code make sure it is in a single, complete code segment including the changes you made.\n"
-                code_from_llm, generate_text = llm_code_generator(prefix + txt2llm, return_gen=True, top_p=top_p, temperature=temperature)
-            elif temp == "ERROR": #another unforseen error
-                code_from_llm, generate_text = llm_code_generator(txt2llm, return_gen=True, top_p=top_p, temperature=temperature) #just retry
-            
-            temp = qc_func(code_from_llm, base_code, generate_text)
-            counter += 1
-        
-        if temp != "NC" or temp != "OOT" or temp != "MS":
-            return base_code
-
-    else:
-        code_from_llm = llm_code_generator(txt2llm, top_p=top_p, temperature=temperature)
-        box_print("TEXT FROM LLM", print_bbox_len=60, new_line_end=False)
-        
-        print(code_from_llm)
-
-    box_print("CODE FROM LLM", print_bbox_len=60, new_line_end=False)
-    code_from_llm = clean_code_from_llm(code_from_llm)
-
-    print(code_from_llm)
+    record_metric("rag_prompt_enhancement", {
+        "mutation_type": mutation_label,
+        "num_retrieved": len(retrieved),
+    })
     
-    return code_from_llm 
+    return augmented
+
 
 def extract_note(txt):
     """Extracts note from the part if present."""
@@ -142,6 +118,63 @@ def split_file(filename):
     parts = re.split(pattern, content)
 
     return parts
+
+def _augment_template_with_rag(template_text: str, mutation_label: str | None, query_code: str | None = None) -> str:
+    """
+    Inject RAG context into a template when the runtime is enabled.
+    """
+    runtime = get_runtime()
+    if runtime is None:
+        return template_text
+    start = time.perf_counter()
+    augmented_template, mutations = runtime.enhance_template(
+        template=template_text,
+        mutation_type=mutation_label,
+        query_code=query_code,
+        gene_id=None,
+    )
+    duration_ms = (time.perf_counter() - start) * 1000
+    record_metric(
+        "rag_prompt_enhancement",
+        {
+            "mutation_type": mutation_label,
+            "retrieval_ms": duration_ms,
+            "retrieved_mutations": len(mutations),
+            "prompt_tokens": len(augmented_template.split()),
+        },
+    )
+    return augmented_template
+
+
+def _prepend_rag_context_to_prompt(prompt_text: str, mutation_label: str | None) -> str:
+    """
+    Build an instruction prefix that references top-performing mutations.
+    """
+    runtime = get_runtime()
+    if runtime is None or not mutation_label:
+        return prompt_text
+    start = time.perf_counter()
+    mutations = runtime.collect_context(mutation_type=mutation_label)
+    duration_ms = (time.perf_counter() - start) * 1000
+    if not mutations:
+        return prompt_text
+    context_block = runtime.format_context(mutations)
+    rag_prefix = (
+        "Here are some successful mutations from prior generations. "
+        "Consider how their approaches might inspire your own creative solution, but feel free to explore novel directions.\n"
+        f"{context_block}\n\n"
+    )
+    record_metric(
+        "rag_prompt_rephrase_context",
+        {
+            "mutation_type": mutation_label,
+            "retrieval_ms": duration_ms,
+            "retrieved_mutations": len(mutations),
+            "prompt_tokens": len(prompt_text.split()),
+        },
+    )
+    return f"{rag_prefix}{prompt_text}"
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -615,7 +648,16 @@ def mutate_prompt(llm_model, template, inference_submission=INFERENCE_SUBMISSION
     with open(template, 'r') as file:
         prompt_text = file.read()
     prompt_text = prompt_text.split("```")[0].strip()
-    prompt = "Can you rephrase this text:\n```\n{}\n```".format(prompt_text)
+    mutation_label = os.path.splitext(filename)[0]
+    prompt_base = (
+        "Rephrase the following prompt template text. "
+        "Return ONLY the rephrased prompt text, do NOT include any code examples or code blocks. "
+        "The output should be a prompt template that can be used to instruct an LLM to modify code. "
+        "Preserve the placeholder {{}} where code should be inserted.\n\n"
+        "Original prompt template:\n```\n{}\n```\n\n"
+        "Rephrased prompt template (text only, no code):"
+    ).format(prompt_text)
+    prompt = _prepend_rag_context_to_prompt(prompt_base, mutation_label)
     temp = np.random.uniform(0.1, 0.4)
 
     llm_code_generator, qc_func = get_llm_code_generator(llm_model)
@@ -626,3 +668,60 @@ def mutate_prompt(llm_model, template, inference_submission=INFERENCE_SUBMISSION
     output = output + "\n```python\n{}\n```"
     with open(os.path.join(path, "mutant{}.txt".format(llm_model)), 'w') as file:
         file.write(output)
+
+
+def select_random_seed_model(gene_id, variant_dir, seed_models_dir, model_prefix="model"):
+    """
+    Select a random model from the seed models directory and copy it to the target location.
+
+    Parameters
+    ----------
+    gene_id : str
+        The gene ID for the new model
+    variant_dir : str
+        Directory where evolved models are stored
+    seed_models_dir : str
+        Directory containing seed models to select from
+    model_prefix : str, optional
+        Prefix for model files, by default "model"
+
+    Returns
+    -------
+    tuple
+        (success: bool, selected_seed_model: str or None)
+    """
+    import shutil
+    import glob
+    import numpy as np
+
+    # Check if seed models directory exists
+    if not os.path.exists(seed_models_dir):
+        print(f"\t☠ Seed models directory does not exist: {seed_models_dir}")
+        return False, None
+
+    # Get all .py files in the seed models directory
+    seed_models = glob.glob(os.path.join(seed_models_dir, f"{model_prefix}_*.py"))
+
+    if not seed_models:
+        print(f"\t☠ No seed models found in {seed_models_dir}")
+        return False, None
+
+    # Randomly select a seed model
+    selected_seed = np.random.choice(seed_models)
+    seed_basename = os.path.basename(selected_seed)
+
+    # Create target path
+    target_path = os.path.join(variant_dir, f"{model_prefix}_{gene_id}.py")
+
+    # Ensure variant directory exists
+    os.makedirs(variant_dir, exist_ok=True)
+
+    # Copy the seed model to the target location
+    try:
+        shutil.copy2(selected_seed, target_path)
+        print(f"\t☑ Randomly selected seed model: {seed_basename}")
+        print(f"\t☑ Copied to: {target_path}")
+        return True, seed_basename
+    except Exception as e:
+        print(f"\t☠ Error copying seed model: {e}")
+        return False, None

@@ -17,7 +17,7 @@ from deap import base, creator, tools
 from deap.tools import HallOfFame, ParetoFront
 from functools import partial
 from src.utils.print_utils import print_population, print_scores, box_print, print_job_info
-from src.llm_utils import split_file, retrieve_base_code
+from src.llm_utils import split_file, retrieve_base_code, select_random_seed_model
 from src.cfg.constants import *
 from src.cfg import constants
 import glob
@@ -231,6 +231,11 @@ def wait_for_llm_server(timeout=3600, check_interval=10):
     """Wait for local LLM server hostname file and HTTP endpoint to become ready."""
     global LLM_SERVER_READY
 
+    # Skip LLM server check if LLM_AVAIL is False
+    if not LLM_AVAIL:
+        print("\t☑ LLM_AVAIL=False: Skipping LLM server check (random mode)", flush=True)
+        return True
+
     if not LOCAL_LLM:
         return True
     if LLM_SERVER_READY:
@@ -397,11 +402,30 @@ def create_individual(container, llm_model, temp_min=0.05, temp_max=0.4):
     out_dir = os.path.join(OUTPUT_DIR, str(GENERATION))
     config = load_yaml()
     gene_id = generate_random_string(length=24)
+
+    # Check if LLM is available
+    if not LLM_AVAIL:
+        # Use random selection from seed models instead of LLM
+        print(f'\t‣ LLM_AVAIL=False: Using random seed model for {gene_id}')
+        successful_sub_flag, selected_seed = select_random_seed_model(
+            gene_id=gene_id,
+            variant_dir=VARIANT_DIR,
+            seed_models_dir=SEED_MODELS_DIR,
+            model_prefix=MODEL
+        )
+        GLOBAL_DATA[gene_id] = {'sub_flag':successful_sub_flag, 'job_id':None,
+                                'status':'subbed file', 'fitness':None, 'start_time':time.time(),
+                                'seed_model': selected_seed}
+        GLOBAL_DATA_ANCESTRY[gene_id] = {'GENES':[gene_id], 'MUTATE_TYPE':["RANDOM_CREATED"]}
+        individual = container([gene_id])
+        return individual
+
+    # Original LLM-based creation
     # Select prompte and temp
     temperature = round(random.uniform(temp_min, temp_max), 2)
     # Assign a file path and name for the model creation bash
     file_path = os.path.join(out_dir, f'{gene_id}.sh')
-    successful_sub_flag, job_id, local_output = submit_bash(file_path, 
+    successful_sub_flag, job_id, local_output = submit_bash(file_path,
                                             input_filename_x=f'{SEED_NETWORK}',
                                             output_filename =f'{VARIANT_DIR}/{MODEL}_{gene_id}.py',
                                             gpu=config.get("LLM_GPU"),
@@ -409,10 +433,10 @@ def create_individual(container, llm_model, temp_min=0.05, temp_max=0.4):
                                             llm_model=llm_model,
                                             job_name="create_individual",
                                             top_p=0.1, temperature=temperature)
-    GLOBAL_DATA[gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id, 
+    GLOBAL_DATA[gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id,
                             'status':'subbed file', 'fitness':None, 'start_time':time.time()}
     GLOBAL_DATA_ANCESTRY[gene_id] = {'GENES':[gene_id], 'MUTATE_TYPE':["CREATED"]}
-    
+
     individual = container([gene_id])  # Assign a file ID
     
     if DELAYED_CHECK:
@@ -773,12 +797,32 @@ def customCrossover(ind1, ind2, llm_model):
         gene_id_2 = ind2[0]
         # Generate the crossover query
         print(f'Mating: {gene_id_1} and {gene_id_2}')
-        temperature = round(random.uniform(temp_min, temp_max), 2)
+
         # Generate a new gene ID for the offspring
         new_gene_id = generate_random_string(length=24)
+
+        # Check if LLM is available
+        if not LLM_AVAIL:
+            # Use random selection from seed models instead of LLM crossover
+            print(f'\t‣ LLM_AVAIL=False: Using random seed model for crossover {new_gene_id}')
+            successful_sub_flag, selected_seed = select_random_seed_model(
+                gene_id=new_gene_id,
+                variant_dir=VARIANT_DIR,
+                seed_models_dir=SEED_MODELS_DIR,
+                model_prefix=MODEL
+            )
+            GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':None,
+                                        'status':'subbed file', 'fitness':None, 'start_time':time.time(),
+                                        'seed_model': selected_seed, 'parents': [gene_id_1, gene_id_2]}
+            update_ancestry(new_gene_id, gene_id_1, GLOBAL_DATA_ANCESTRY, mutation_type="RANDOM_CROSSOVER", gene_id_parent2=gene_id_2)
+            failed_process = not successful_sub_flag
+            return new_gene_id, failed_process
+
+        # Original LLM-based crossover
+        temperature = round(random.uniform(temp_min, temp_max), 2)
         # Create the bash file for the new job
         file_path = os.path.join(out_dir, f'{new_gene_id}.sh')
-        successful_sub_flag, job_id, local_output = submit_bash(file_path, 
+        successful_sub_flag, job_id, local_output = submit_bash(file_path,
                                           input_filename_x=f'{VARIANT_DIR}/{MODEL}_{gene_id_1}.py',
                                           input_filename_y=f'{VARIANT_DIR}/{MODEL}_{gene_id_2}.py',
                                           output_filename=f'{VARIANT_DIR}/{MODEL}_{new_gene_id}.py',
@@ -788,7 +832,7 @@ def customCrossover(ind1, ind2, llm_model):
                                           top_p=0.1, llm_model=llm_model, temperature=temperature)
 
         # Update global data for the new individual
-        GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id, 
+        GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id,
                                     'status':'subbed file', 'fitness':None, 'start_time':time.time()}
         
         if DELAYED_CHECK:
@@ -855,21 +899,43 @@ def customMutation(individual, llm_model, indpb, temp_min=0.02, temp_max=0.35):
     # Generate a new gene ID
     new_gene_id = generate_random_string(length=24)
     print(f'Mutating: {old_gene_id} and Replacing with: {new_gene_id}')
+
+    # Check if LLM is available
+    if not LLM_AVAIL:
+        # Use random selection from seed models instead of LLM mutation
+        print(f'\t‣ LLM_AVAIL=False: Using random seed model for mutation {new_gene_id}')
+        successful_sub_flag, selected_seed = select_random_seed_model(
+            gene_id=new_gene_id,
+            variant_dir=VARIANT_DIR,
+            seed_models_dir=SEED_MODELS_DIR,
+            model_prefix=MODEL
+        )
+        GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':None,
+                                    'status':'subbed file', 'fitness':None, 'start_time':time.time(),
+                                    'seed_model': selected_seed, 'parent': old_gene_id}
+        update_ancestry(new_gene_id, old_gene_id, GLOBAL_DATA_ANCESTRY, mutation_type="RANDOM_MUTATION")
+
+        failed_process = not successful_sub_flag
+        individual = update_individual(individual, new_gene_id, old_gene_id,
+                                       process_success=(not failed_process), process_type='Mutation')
+        return individual
+
+    # Original LLM-based mutation
     # Name of the sh bash file
     file_path = os.path.join(OUTPUT_DIR, str(GENERATION), f'{new_gene_id}.sh')
     temperature = round(random.uniform(temp_min, temp_max), 2)
-    successful_sub_flag, job_id, local_output = submit_bash(file_path, 
+    successful_sub_flag, job_id, local_output = submit_bash(file_path,
                                               input_filename_x= f'{VARIANT_DIR}/{MODEL}_{old_gene_id}.py',
                                               output_filename = f'{VARIANT_DIR}/{MODEL}_{new_gene_id}.py',
                                               gpu=config['gpu_selection'],
                                               python_file='src/llm_mutation.py',
                                               job_name="mutation_operation",
                                               top_p=0.1, llm_model=llm_model, temperature=temperature)
-    
+
     # Update the individual with the new gene ID
     # individual[0] = new_gene_id
     # Update the global data with the new task
-    GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id, 
+    GLOBAL_DATA[new_gene_id] = {'sub_flag':successful_sub_flag, 'job_id':job_id,
                                 'status':'subbed file', 'fitness':None, 'start_time':time.time()}
     
     if DELAYED_CHECK:
@@ -1041,19 +1107,40 @@ if __name__ == "__main__":
     parser.add_argument('--llm_model', type=str, help='Which LLM to use', default=DEFAULT_LLM_MODEL)
     parser.add_argument('--global_path', type=str, help='Path to global variables', default=ROOT_DIR)
     parser.add_argument('--prompt_group', type=str, help='Prompt group or glob (relative to templates/)', default=None)
+    parser.add_argument('--llm_avail', type=lambda x: (str(x).lower() == 'true'),
+                        default=True, help='Whether LLM server is available (default: True). Set to False to use random seed models.')
     # Parse the arguments
     args = parser.parse_args()
     llm_model = args.llm_model
+
+    # Override LLM_AVAIL from command line argument
+    constants.LLM_AVAIL = args.llm_avail
+    globals()['LLM_AVAIL'] = args.llm_avail
 
     PROMPT_GLOB = resolve_prompt_glob(args.prompt_group)
 
     print(DNA_TXT)
     print("ISLAND llm_model: ", llm_model)
     print(f"Prompt glob: {PROMPT_GLOB}")
+    print(f"LLM_AVAIL: {LLM_AVAIL}")
+
+    if not LLM_AVAIL:
+        box_print("RUNNING IN RANDOM MODE (LLM_AVAIL=False)", print_bbox_len=60)
+        print(f"Seed models directory: {SEED_MODELS_DIR}")
+        # Ensure seed models directory exists
+        if not os.path.exists(SEED_MODELS_DIR):
+            print(f"\t☠ WARNING: Seed models directory does not exist: {SEED_MODELS_DIR}")
+            print(f"\t☠ Please create it and add seed models before running.")
+        else:
+            seed_count = len(glob.glob(os.path.join(SEED_MODELS_DIR, f"{MODEL}_*.py")))
+            print(f"\t☑ Found {seed_count} seed models")
 
     if AVAILABLE_LLM_MODELS and (not llm_model or llm_model not in AVAILABLE_LLM_MODELS):
-        print("Error in Island Generation: No LLM specified. Exiting script")
-        exit(1)
+        if LLM_AVAIL:
+            print("Error in Island Generation: No LLM specified. Exiting script")
+            exit(1)
+        else:
+            print("Warning: LLM model not specified, but LLM_AVAIL=False, so continuing with random mode")
 
     population_data, start_gen, global_data = load_checkpoint(folder_name=args.checkpoints, global_path=args.global_path)
     if population_data:

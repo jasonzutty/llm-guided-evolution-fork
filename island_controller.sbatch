@@ -4,7 +4,7 @@
 #SBATCH --mem=16G
 #SBATCH --time=8:00:00
 #SBATCH --output=run_job_outputs/islands/Report_island_controller-%j.out
-#SBATCH -C intel
+# # Node constraint removed (was causing Invalid feature specification)
 # Island controller arguments:
 # $1 (COUNT): Number of remaining restart iterations
 # $2 (PREV_SERVER_JOB_ID): Job ID of the currently-running server (to cancel)
@@ -22,7 +22,7 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd /storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure
+cd /home/mgullapalli6/scratch/llm-guided-evolution-infrastructure
 
 uv run python islands_wrapper.py titanic_islands_run2 \
     --num_islands 2 \

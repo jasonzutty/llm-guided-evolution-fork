@@ -14,4 +14,4 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py titanic_test
+uv run python run_improved.py titanic_test --llm_avail False

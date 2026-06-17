@@ -60,6 +60,8 @@ if __name__ == "__main__":
     sections = parse_config_sections(content)
 
     # Generate run.sh
+    # Pass LLM_AVAIL flag to run_improved.py
+    llm_avail_arg = "--llm_avail True" if constants.LLM_AVAIL else "--llm_avail False"
     run_sh = sections.get("run.sh", "") + f"""
 echo "launching LLM Guided Evolution"
 hostname
@@ -70,7 +72,7 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py {constants.OUTPUT_DIR}
+uv run python run_improved.py {constants.OUTPUT_DIR} {llm_avail_arg}
 """
     replace_script_configuration("run.sh", run_sh)
 
@@ -109,7 +111,9 @@ echo "Using UV cache: $UV_CACHE_DIR"
 """
 
     # Generate LLM bash script template
-    llm_script = sections.get("llm-bash-script", "") + f"""
+    # Check if LLM is available - if not, generate a simpler script
+    if constants.LLM_AVAIL:
+        llm_script = sections.get("llm-bash-script", "") + f"""
 echo "Launching AIsurBL"
 hostname
 
@@ -123,8 +127,24 @@ echo "Using UV cache: $UV_CACHE_DIR"
 # Run Python script
 {{}}
 """
+    else:
+        # LLM_AVAIL=False: Skip LLM server, just run basic Python
+        llm_script = sections.get("llm-bash-script", "") + f"""
+echo "LLM_AVAIL=False: Running in random mode (no LLM server needed)"
+hostname
+
+module load uv
+export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
+mkdir -p "$UV_CACHE_DIR"
+echo "Using UV cache: $UV_CACHE_DIR"
+
+# Run Python script (LLM operations will use random seed selection)
+{{}}
+"""
 
     # Generate islands bash script template (for islands_wrapper.py)
+    # Pass LLM_AVAIL flag
+    llm_avail_arg = "--llm_avail True" if constants.LLM_AVAIL else "--llm_avail False"
     islands_script = sections.get("islands", sections.get("island-controller", "")) + f"""
 cd $SLURM_SUBMIT_DIR
 echo "launching AIsurBL"
@@ -135,11 +155,13 @@ module load cuda
 export HF_HOME={constants.HF_HOME}
 
 # Run Python script
-uv run python run_improved.py --checkpoints {{checkpoint_path}} --global_path {{global_path}} --llm_model {{llm_model}} --prompt_group {{prompt_group}}
+uv run python run_improved.py --checkpoints {{checkpoint_path}} --global_path {{global_path}} --llm_model {{llm_model}} --prompt_group {{prompt_group}} {llm_avail_arg}
 """
 
     # Generate server.sh
-    local_llm_server = f"""
+    if constants.LLM_AVAIL:
+        # Normal server launch when LLM is available
+        local_llm_server = f"""
 echo "launching LLM Server"
 # Optional chained submission count to work around walltime limits
 COUNT=${{1:-1}}
@@ -239,9 +261,60 @@ case "$SERVER_BACKEND" in
 esac
 
 """
+    else:
+        # LLM_AVAIL=False: Run island controller directly without LLM server
+        # The server.sh job still runs, but instead of starting LLM server,
+        # it just keeps running and launches the island controller, then waits
+        local_llm_server = f"""
+echo "LLM_AVAIL=False: Running in random mode (no LLM server needed)"
+echo "This job will coordinate island controller without starting LLM inference"
+
+# Optional chained submission count to work around walltime limits
+COUNT=${{1:-1}}
+
+hostname
+module load uv
+
+export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
+mkdir -p "$UV_CACHE_DIR"
+echo "Using UV cache: $UV_CACHE_DIR"
+
+# Create a dummy hostname file so pipeline doesn't wait for it
+export SERVER_HOSTNAME=$(hostname)
+HOSTNAME_FILE=$(pwd)"/hostname.log"
+echo "Writing dummy hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
+echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
+
+echo "Submitting island controller (count=$COUNT) in random mode"
+sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+
+# Keep this job alive to maintain coordination
+# In random mode, this acts as a coordinator rather than a server
+echo "Coordinator job running. Pipeline will use random seed model selection."
+echo "Waiting for island controller to complete..."
+
+# Sleep indefinitely to keep job alive while island controller runs
+# The walltime limit will eventually terminate this
+while true; do
+    sleep 300  # Check every 5 minutes
+
+    # Check if island controller is still running
+    if [ -n "$SLURM_JOB_ID" ]; then
+        # Check if any dependent jobs are still queued/running
+        DEPENDENT_JOBS=$(squeue -u $USER -h -o "%A" -d "$SLURM_JOB_ID" 2>/dev/null | wc -l)
+        if [ "$DEPENDENT_JOBS" -eq "0" ]; then
+            echo "No dependent jobs remain. Coordinator exiting."
+            break
+        fi
+    fi
+done
+
+echo "Coordinator job complete"
+"""
+
     server_config = sections.get("server-sh", "")
     replace_script_configuration("server.sh", server_config + local_llm_server)
-    print(f"Generated server.sh with config:\n{server_config}")
+    print(f"Generated server.sh with config (LLM_AVAIL={constants.LLM_AVAIL}):\n{server_config}")
 
     # Generate unified island_controller.sbatch
     island_controller = sections.get("island-controller", sections.get("islands", "")) + f"""
@@ -279,6 +352,10 @@ if (( COUNT > 1 )); then
     sbatch server.sh "$NEXT_COUNT"
 fi
 """
+    # Remove problematic constraint lines that might cause "Invalid feature specification"
+    # The -C intel constraint often fails on clusters
+    island_controller = island_controller.replace("#SBATCH -C intel", "# Node constraint removed (was causing Invalid feature specification)")
+
     island_controller = island_controller.replace(
         "#SBATCH --job-name=Islands",
         "#SBATCH --job-name=IslandsController"

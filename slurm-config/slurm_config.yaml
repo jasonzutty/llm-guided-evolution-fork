@@ -13,7 +13,7 @@ islands_bash_script: '#!/bin/bash
 
     #SBATCH --gres=gpu:1
 
-    #SBATCH -C intel
+    # #SBATCH -C intel
 
     cd $SLURM_SUBMIT_DIR
 
@@ -31,7 +31,7 @@ islands_bash_script: '#!/bin/bash
     # Run Python script
 
     uv run python run_improved.py --checkpoints {checkpoint_path} --global_path {global_path}
-    --llm_model {llm_model} --prompt_group {prompt_group}
+    --llm_model {llm_model} --prompt_group {prompt_group} --llm_avail False
 
     '
 llm_bash_script: '#!/bin/bash
@@ -48,16 +48,12 @@ llm_bash_script: '#!/bin/bash
 
     #SBATCH --output=run_job_outputs/evolution/slurm-%j.out
 
-    echo "Launching AIsurBL"
+    echo "LLM_AVAIL=False: Running in random mode (no LLM server needed)"
 
     hostname
 
 
-    module load cuda
-
     module load uv
-
-    export CUDA_VISIBLE_DEVICES=0
 
     export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
 
@@ -66,7 +62,7 @@ llm_bash_script: '#!/bin/bash
     echo "Using UV cache: $UV_CACHE_DIR"
 
 
-    # Run Python script
+    # Run Python script (LLM operations will use random seed selection)
 
     {}
 
