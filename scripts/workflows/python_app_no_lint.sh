@@ -19,13 +19,22 @@ prepare_cifar10() {
     if ! gzip -t "$archive" 2>/dev/null; then
       echo "Existing file is corrupted, removing and re-downloading..."
       rm -f "$archive"
+    else
+      echo "Using existing valid CIFAR-10 archive"
     fi
   fi
 
   # Download if file doesn't exist
   if [ ! -f "$archive" ]; then
-    echo "Downloading CIFAR-10 dataset..."
-    curl -fsSL -o "$archive" "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+    echo "Downloading CIFAR-10 dataset (170MB)..."
+    # Use --progress-bar and add timeout, retry options
+    if ! curl --fail --location --show-error --progress-bar \
+         --max-time 600 --retry 3 --retry-delay 5 \
+         -o "$archive" "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"; then
+      echo "Error: Download failed"
+      rm -f "$archive"
+      exit 1
+    fi
 
     # Verify the download is a valid gzip file
     if ! gzip -t "$archive" 2>/dev/null; then
@@ -59,7 +68,8 @@ fi
 # Ensure CUDA is visible to PyTorch
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 
-# Disable LLM server auto-start for tests that don't need it (like ExquisiteNetV2)
-# Use -v for verbose output and -s to disable output capture (show print statements)
+# Disable LLM server auto-start for tests - conftest.py manages the server
 export LLMGE_AUTO_START_SERVER=0
+
+# Use -v for verbose output and -s to disable output capture (show print statements)
 uv run pytest -v -s
