@@ -68,8 +68,6 @@ fi
 # Ensure CUDA is visible to PyTorch
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 
-# Disable LLM server auto-start for tests - conftest.py manages the server
-export LLMGE_AUTO_START_SERVER=0
-
+# Let conftest.py auto-start the server (default behavior)
 # Use -v for verbose output and -s to disable output capture (show print statements)
 uv run pytest -v -s

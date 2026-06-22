@@ -68,9 +68,7 @@ fi
 # Ensure CUDA is visible to PyTorch
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 
-# Disable LLM server auto-start for tests - conftest.py manages the server
-export LLMGE_AUTO_START_SERVER=0
-
+# Let conftest.py auto-start the server (default behavior)
 uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude .venv
 uv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude .venv
 uv run pytest -v
