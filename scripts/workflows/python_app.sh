@@ -14,11 +14,30 @@ prepare_cifar10() {
   local archive="cifar-10-python.tar.gz"
   local target_dir="sota/ExquisiteNetV2"
 
+  # Check if file exists and is valid, remove if corrupted
+  if [ -f "$archive" ]; then
+    if ! gzip -t "$archive" 2>/dev/null; then
+      echo "Existing file is corrupted, removing and re-downloading..."
+      rm -f "$archive"
+    fi
+  fi
+
+  # Download if file doesn't exist
   if [ ! -f "$archive" ]; then
-    curl -O "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+    echo "Downloading CIFAR-10 dataset..."
+    curl -fsSL -o "$archive" "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+
+    # Verify the download is a valid gzip file
+    if ! gzip -t "$archive" 2>/dev/null; then
+      echo "Error: Downloaded file is not a valid gzip archive"
+      rm -f "$archive"
+      exit 1
+    fi
+    echo "Download successful and verified"
   fi
 
   if [ ! -d "$target_dir/cifar-10-batches-py" ]; then
+    echo "Extracting CIFAR-10 dataset..."
     tar -xzf "$archive" -C "$target_dir/"
   fi
 
