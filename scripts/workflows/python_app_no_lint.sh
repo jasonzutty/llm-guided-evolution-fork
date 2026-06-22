@@ -29,7 +29,7 @@ prepare_cifar10() {
     echo "Downloading CIFAR-10 dataset (170MB)..."
     # Use --progress-bar and add timeout, retry options
     if ! curl --fail --location --show-error --progress-bar \
-         --max-time 600 --retry 3 --retry-delay 5 \
+         --max-time 3600 --retry 3 --retry-delay 5 \
          -o "$archive" "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"; then
       echo "Error: Download failed"
       rm -f "$archive"
