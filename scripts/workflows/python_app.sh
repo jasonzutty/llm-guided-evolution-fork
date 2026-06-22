@@ -51,6 +51,17 @@ install_uv
 uv sync
 prepare_cifar10
 
+# Load CUDA module if running on HPC with module system
+if command -v module >/dev/null 2>&1; then
+  module load cuda 2>/dev/null || echo "CUDA module not available"
+fi
+
+# Ensure CUDA is visible to PyTorch
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+
+# Disable LLM server auto-start for tests - conftest.py manages the server
+export LLMGE_AUTO_START_SERVER=0
+
 uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude .venv
 uv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude .venv
 uv run pytest -v

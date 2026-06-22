@@ -32,12 +32,7 @@ if [ "$SUBMIT_ISLAND_CONTROLLER" = "1" ]; then
     echo "Submitting island controller (count=$COUNT)"
     sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 else
-    echo "Skipping island controller submission"
+    echo "Skipping island controller submission (SUBMIT_ISLAND_CONTROLLER=$SUBMIT_ISLAND_CONTROLLER)"
 fi
-
-
-# Submit the paired island-controller job from here so the two stay in sync
-echo "Submitting island controller (count=$COUNT)"
-sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
 uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 8137 --workers 1
