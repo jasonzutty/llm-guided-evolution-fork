@@ -53,7 +53,7 @@ LLM_GEMINI = 'gemini'
 ISLAND_LLMS = [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_GEMMA3, LLM_GEMINI]
 
 ENVIRONMENT_DIR = os.path.join(ROOT_DIR, ".venv")
-LOCAL_LLM = True
+LOCAL_LLM = os.getenv("LOCAL_LLM", "true").lower() in ("true", "1", "yes")
 HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
 
 # Multi-island settings
@@ -92,13 +92,13 @@ else:
 
 INFERENCE_SUBMISSION = False
 
-LOCAL = False
+LOCAL = os.getenv("LOCAL", "false").lower() in ("true", "1", "yes")
 if LOCAL:
     RUN_COMMAND = 'bash'
-    DELAYED_CHECK = False
+    DELAYED_CHECK = os.getenv("DELAYED_CHECK", "false").lower() in ("true", "1", "yes")
 else: 
     RUN_COMMAND = 'sbatch'
-    DELAYED_CHECK = True
+    DELAYED_CHECK = os.getenv("DELAYED_CHECK", "true").lower() in ("true", "1", "yes")
 MACOS = platform.system() == "Darwin"
 RUNLINE_AMP = ''
 if torch.mps.is_available():

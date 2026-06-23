@@ -30,12 +30,20 @@ export SERVER_HOSTNAME=$(hostname)
 
 HOSTNAME_FILE=$(pwd)"/hostname.log"
 
-echo "Writing server hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
+# Write hostname to file so tests can find the server
 echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
-echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT)"
+echo "Wrote hostname to $HOSTNAME_FILE"
 
-# Submit the paired island-controller job from here so the two stay in sync
-echo "Submitting island controller (count=$COUNT)"
-sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+# Log the island controller setting for debugging
+echo "SUBMIT_ISLAND_CONTROLLER=${SUBMIT_ISLAND_CONTROLLER:-<not set>}"
+
+# Default behavior: START island controller unless explicitly disabled
+if [ "${SUBMIT_ISLAND_CONTROLLER:-1}" = "1" ]; then
+    # Submit the paired island-controller job from here so the two stay in sync.
+    echo "Submitting island controller (count=$COUNT)"
+    sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+else
+    echo "Skipping island controller submission (SUBMIT_ISLAND_CONTROLLER=${SUBMIT_ISLAND_CONTROLLER})"
+fi
 
 uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 8169 --workers 1

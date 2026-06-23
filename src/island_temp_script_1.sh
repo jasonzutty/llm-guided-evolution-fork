@@ -15,4 +15,8 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Run Python script
+<<<<<<< HEAD
 uv run python run_improved.py --checkpoints mujoco_islands_run/island_llama3_Mujoco-Normal --global_path mujoco_islands_run/global_data --llm_model llama3 --prompt_group Mujoco/Normal
+=======
+uv run python run_improved.py --checkpoints titanic_islands_run2/island_llama3_titanic-focused --global_path titanic_islands_run2/global_data --llm_model llama3 --prompt_group titanic/focused
+>>>>>>> origin/MosesMerge_uncorrupted
