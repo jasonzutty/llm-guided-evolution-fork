@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HOSTNAME_FILE = ROOT / "hostname.log"
-PORT = int(os.getenv("LLMGE_SERVER_PORT", "8137"))
+PORT = int(os.getenv("LLMGE_SERVER_PORT", "8169"))
 READY_TIMEOUT = int(os.getenv("LLM_SERVER_READY_TIMEOUT", "3600"))
 READY_CHECK_INTERVAL = int(os.getenv("LLM_SERVER_READY_CHECK_INTERVAL", "10"))
 
