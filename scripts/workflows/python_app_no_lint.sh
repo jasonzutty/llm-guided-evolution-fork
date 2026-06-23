@@ -32,4 +32,15 @@ install_uv
 uv sync
 prepare_cifar10
 
-uv run pytest
+# Load CUDA module if running on HPC with module system
+if command -v module >/dev/null 2>&1; then
+  module load cuda 2>/dev/null || echo "CUDA module not available"
+fi
+
+# Ensure CUDA is visible to PyTorch
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+
+# Disable LLM server auto-start for tests that don't need it (like ExquisiteNetV2)
+# Use -v for verbose output and -s to disable output capture (show print statements)
+export LLMGE_AUTO_START_SERVER=0
+uv run pytest -v -s

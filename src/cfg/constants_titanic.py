@@ -98,13 +98,13 @@ else:
 
 INFERENCE_SUBMISSION = False
 
-LOCAL = False
+LOCAL = os.getenv("LOCAL", "false").lower() in ("true", "1", "yes")
 if LOCAL:
     RUN_COMMAND = 'bash'
-    DELAYED_CHECK = False
+    DELAYED_CHECK = os.getenv("DELAYED_CHECK", "false").lower() in ("true", "1", "yes")
 else: 
     RUN_COMMAND = 'sbatch'
-    DELAYED_CHECK = True
+    DELAYED_CHECK = os.getenv("DELAYED_CHECK", "true").lower() in ("true", "1", "yes")
 MACOS = platform.system() == "Darwin"
 RUNLINE_AMP = ''
 # Keep constants import side-effect free. In particular, do not call
