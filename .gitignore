@@ -20,11 +20,9 @@ output/
 **/results/
 **/llmge_models/
 slurm-*.out
-.gitignore
-titanic_test/*
 *.pkl
 src/island_temp_script.sh
-cifar10
+cifar10/
 uv.lock
 pareto_fronts
 */run_job_outputs
@@ -37,6 +35,7 @@ Thumbs.db
 analysis/dashboard/uploads/
 analysis/results/analysis/*
 !analysis/results/analysis/.gitkeep
+sota/ExquisiteNetV2/cifar-10-python
 *.out
 *.log
 *.pt
@@ -46,5 +45,7 @@ analysis/results/analysis/*
 *.safetensors
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
+run_metrics/
+sota/ExquisiteNetV2/cifar-10-python/
 *.code-workspace
 
