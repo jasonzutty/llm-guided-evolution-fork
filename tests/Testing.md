@@ -3,7 +3,7 @@
 ## Overview
 We have created unit tests dedicated to core functionalities of LLMGE. The unit tests help to validate critical stages of the evolutionary pipeline
 such as the individual evaluation and the LLM-guided crossover. These tests help to ensure that the models being generate are valid Python
-containing a valid class and methods. And are producing FP/FN results during the evalution on the Titantic dataset. These tests are built using pytest and some tests will require you to be on the Pace Ice cluster with an active LLM server.
+containing a valid class and methods. And are producing FP/FN results during the evalution on the Titantic dataset. These tests are built using pytest and some tests will require you to be on the Pace Ice cluster where an LLM server can be started.
 
 ## The Unit Tests
 ### test_individuals.py
@@ -14,7 +14,9 @@ Tests the LLM-guided crossover function on pairs of frozen individuals. Given ge
 
 ## Prerequistes
 What is required before running:
-- The LLM server must be running (sbatch server.sh) for unit tests such as crossover and mutation.
+- The LLM server is started automatically when pytest starts. If `hostname.log` already points to a ready server, pytest reuses it.
+- On Pace Ice, pytest submits `server.sh` through Slurm without starting the island controller.
+- To disable automatic server startup for collection or non-LLM debugging, run with `LLMGE_AUTO_START_SERVER=0`.
 
 ## Running the Tests
 uv run pytest tests/ -v

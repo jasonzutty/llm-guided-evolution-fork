@@ -45,3 +45,5 @@ analysis/results/analysis/*
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
 *run_metrics
+*.code-workspace
+

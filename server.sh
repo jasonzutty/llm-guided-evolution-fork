@@ -2,14 +2,14 @@
 #SBATCH --job-name=LLMGE01_Server
 #SBATCH -t 8:00:00
 #SBATCH --nodes=1
-#SBATCH -G 2
-#SBATCH -C "H200"
+#SBATCH --gres=gpu:h200:2
 #SBATCH --mem 160G
 #SBATCH -c 16
 #SBATCH --output=run_job_outputs/server/slurm-%j.out
 echo "launching LLM Server"
 # Optional chained submission count to work around walltime limits
 COUNT=${1:-1}
+SUBMIT_ISLAND_CONTROLLER=${SUBMIT_ISLAND_CONTROLLER:-1}
 
 # Backend selection:
 # 1) Positional argument $2
@@ -72,9 +72,13 @@ echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
 echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT, backend=$SERVER_BACKEND)"
 echo "Using vLLM package: $VLLM_PACKAGE"
 
-# Submit the paired island-controller job from here so the two stay in sync
-echo "Submitting island controller (count=$COUNT)"
-sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+if [ "$SUBMIT_ISLAND_CONTROLLER" = "1" ]; then
+    # Submit the paired island-controller job from here so the two stay in sync.
+    echo "Submitting island controller (count=$COUNT)"
+    sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
+else
+    echo "Skipping island controller submission"
+fi
 
 case "$SERVER_BACKEND" in
     vllm)
