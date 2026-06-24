@@ -22,7 +22,7 @@ module load cuda
 export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
 
 # Change to the repository root
-cd /storage/ice1/2/5/mgullapalli6/3/llm-guided-evolution-infrastructure
+cd /storage/ice1/2/5/mgullapalli6/1/llm-guided-evolution-infrastructure
 
 uv run python islands_wrapper.py mujoco_islands_run \
     --num_islands 1 \
