@@ -28,6 +28,7 @@ uv.lock
 pareto_fronts
 */run_job_outputs
 .venv/
+weights/
 venv/
 *.pyc
 *.pyo
@@ -45,6 +46,7 @@ analysis/results/analysis/*
 *.safetensors
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
-*run_metrics
+run_metrics/
+**/cifar-10-python/
 *.code-workspace
 
