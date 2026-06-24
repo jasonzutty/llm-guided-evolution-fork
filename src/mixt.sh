@@ -14,4 +14,4 @@ export TOKENIZERS_PARALLELISM=false
 export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
 mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
-uv run python llm_crossover.py 'C:\Users\mgullapalli6\Downloads\srlkdgjriojvh\llm-guided-evolution-infrastructure\sota\Titanic\model.py' 'C:\Users\mgullapalli6\Downloads\srlkdgjriojvh\llm-guided-evolution-infrastructure\sota\Titanic\models/Menghao/model_x.py' 'C:\Users\mgullapalli6\Downloads\srlkdgjriojvh\llm-guided-evolution-infrastructure\sota\Titanic\models/Menghao/model_z.py'  --top_p 0.15   --temperature 0.1 --apply_quality_control 'True' --bit 8
+uv run python llm_crossover.py '/storage/ice1/2/5/mgullapalli6/4/llm-guided-evolution-infrastructure/sota/Titanic/model.py' '/storage/ice1/2/5/mgullapalli6/4/llm-guided-evolution-infrastructure/sota/Titanic/models/Menghao/model_x.py' '/storage/ice1/2/5/mgullapalli6/4/llm-guided-evolution-infrastructure/sota/Titanic/models/Menghao/model_z.py'  --top_p 0.15   --temperature 0.1 --apply_quality_control 'True' --bit 8
