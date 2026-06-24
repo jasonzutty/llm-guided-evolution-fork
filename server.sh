@@ -37,6 +37,10 @@ export FLASHINFER_CACHE_DIR="$XDG_CACHE_HOME/flashinfer"
 mkdir -p "$UV_CACHE_DIR"
 mkdir -p "$XDG_CACHE_HOME" "$TORCHINDUCTOR_CACHE_DIR" "$FLASHINFER_CACHE_DIR"
 
+# Prevent transformers from importing TensorFlow (vLLM doesn't need it)
+export USE_TF=0
+export TF_CPP_MIN_LOG_LEVEL=3
+
 echo "Using UV cache: $UV_CACHE_DIR"
 echo "Using XDG cache: $XDG_CACHE_HOME"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
@@ -74,7 +78,7 @@ sbatch island_controller.sbatch "$COUNT" "$SLURM_JOB_ID"
 
 case "$SERVER_BACKEND" in
     vllm)
-        uv run --no-project --with "$VLLM_PACKAGE" --with fastapi --with uvicorn             python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port 2244 --workers 1
+       uv run python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port 2244 --workers 1
         ;;
     normal|transformers|baseline)
         uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port 2244 --workers 1

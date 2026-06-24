@@ -1,1 +1,1 @@
-constants_titanic.py
+from src.cfg.constants_titanic import *
