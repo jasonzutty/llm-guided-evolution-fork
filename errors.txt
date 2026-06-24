@@ -1,0 +1,9 @@
+Errors
+
+1. The virtual environment for surrogate evolution does not launch. (Branch specific issue)
+
+General Errors:
+
+1. Batches can be clumped together.
+2. Somse server text is not flushed.
+

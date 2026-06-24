@@ -1,0 +1,10 @@
+input_model,mutated_model,valid_syntax,FP,FN
+model_xXx04jaaxCjDADdZfQejz3gbNFD,mutated_xXx04jaaxCjDADdZfQejz3gbNFD,PASS,ERR,ERR
+model_xXx05DUkH2xBIGogZRAFJ8nnJHE,mutated_xXx05DUkH2xBIGogZRAFJ8nnJHE,"FAIL (SyntaxError: expected 'except' or 'finally' block (<unknown>, line 74))",ERR,ERR
+model_xXx07Gk5iNRGngQLpVQwbMDAAS1,mutated_xXx07Gk5iNRGngQLpVQwbMDAAS1,PASS,ERR,ERR
+model_xXx09ejihbvx7yUX9JYxtIVPGDs,mutated_xXx09ejihbvx7yUX9JYxtIVPGDs,PASS,16.0,20.0
+model_xXx0LFCBTNE4Wx7KUjfsG1nZc4I,mutated_xXx0LFCBTNE4Wx7KUjfsG1nZc4I,PASS,ERR,ERR
+model_xXx0MtgG8LTm4mSVWscg4s97g0W,mutated_xXx0MtgG8LTm4mSVWscg4s97g0W,FAIL (missing predict()),ERR,ERR
+model_xXx0OCDKQ3u88o9xhlAyHpEcfhM,mutated_xXx0OCDKQ3u88o9xhlAyHpEcfhM,PASS,16.0,19.0
+model_xXx0T6XRn6JDQPVLadZ4zBFlTd0,mutated_xXx0T6XRn6JDQPVLadZ4zBFlTd0,"FAIL (SyntaxError: unterminated triple-quoted string literal (detected at line 104) (<unknown>, line 100))",ERR,ERR
+model_xXx0UVvEW16rb3wrfuDSAemYblI,mutated_xXx0UVvEW16rb3wrfuDSAemYblI,"FAIL (SyntaxError: unterminated triple-quoted string literal (detected at line 163) (<unknown>, line 158))",ERR,ERR

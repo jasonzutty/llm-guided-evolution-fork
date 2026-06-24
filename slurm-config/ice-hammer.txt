@@ -68,4 +68,28 @@ server-sh
 #SBATCH --mem 160G
 #SBATCH -c 16
 #SBATCH -w ice193
----------
+------
+
+
+island-controller
+------
+#!/bin/bash
+#SBATCH --job-name=Islands
+#SBATCH -t 30-00:00
+#SBATCH -n 16
+#SBATCH -N 1
+#SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
+------
+
+
+islands
+------
+#!/bin/bash
+#SBATCH --job-name=Islands
+#SBATCH -N1 --ntasks-per-node=16
+#SBATCH --mem-per-gpu=16G
+#SBATCH --time=16:00:00
+#SBATCH --output=run_job_outputs/islands/Report_islands-%j.out
+#SBATCH --gres=gpu:1
+#SBATCH -C intel
+------

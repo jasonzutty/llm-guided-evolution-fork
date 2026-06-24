@@ -39,22 +39,8 @@ Ensure that your settings are up to date in src/cfg/constants_titanic.py, and th
 
 You will then prepare your scripts by running `uv run slurm.py`. This will generate bash files that you can submit to slurm
 
-Next you will need to submit an inference server that the LLM-GE will use for mating and mutating individuals. You will do this by running: `sbatch server.sh`, this will submit the server script that slurm.py created.
+Next you will need to submit an inference server that the LLM-GE will use for mating and mutating individuals. You will do this by running: `sbatch server.sh`, this will submit the server script that slurm.py created. This will also submit the main evolution process seperately through the `island_controller.sbatch` file.
 
-Monitor the output and then when you are ready, you will run `sbatch run.sh` to kick off an evolution!
+First make sure that the process runs successfully. Then on subsequent runs you can use the command line argument to `server.sh` to make it resume once the 8 hour time limit is reached. For example the command `sbatch server.sh 3` will run the server 3 times in a row, totalling 24 hours of run time.
 
-Since the `run.sh` script and the `server.sh` script only run for 8 hours each you will have to resubmit the jobs after they time out. You can automate this process using the `-d afterany:<job_id>` command for sbatch. This will make the next job run only after the previous job has completed. You can use this command to build a dependancy chain that will execute one job after another until all jobs complete. Here is an example:
-
-```
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch server.sh
-Submitted batch job 3194630
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3194630 server.sh
-Submitted batch job 3198458
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3198458 server.sh
-Submitted batch job 3198460
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3198460 server.sh
-Submitted batch job 3198461
-[amcdaniel39@atl1-1-02-003-19-1 llm-guided-evolution-fork]$ sbatch -d afterany:3198461 server.sh
-```
-
-These commands will make 5 server processes run one after another, effectively letting the server run for 40 hours! You can do this same thing with the `run.sh` script to make the evolution run for much longer than 8 hours.
+NOTE: running jobs at scale with large numbers of consecutive resubmissions should only be done AFTER you confirm that it runs once. Otherwise it becomes increasingly difficult to debug, and potentially uses far more resources on pace than necessary making it difficult for others to get jobs running. Don't scale up your resource utilization without careful verification that it makes sense to.

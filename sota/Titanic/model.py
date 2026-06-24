@@ -1,7 +1,7 @@
+# --OPTION--
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
-# --OPTION--
 class Model:
     def __init__(self):
       self.classifier = RandomForestClassifier() 

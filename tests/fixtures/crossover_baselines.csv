@@ -1,0 +1,8 @@
+gene_id_x,gene_id_y,valid_syntax,FP,FN
+xXx0MtgG8LTm4mSVWscg4s97g0W,xXx09ejihbvx7yUX9JYxtIVPGDs,PASS,16.0,22.0
+xXx0MtgG8LTm4mSVWscg4s97g0W,xXx0UVvEW16rb3wrfuDSAemYblI,PASS,16.0,22.0
+xXx0LFCBTNE4Wx7KUjfsG1nZc4I,xXx07Gk5iNRGngQLpVQwbMDAAS1,PASS,17.0,21.0
+xXx0LFCBTNE4Wx7KUjfsG1nZc4I,xXx09ejihbvx7yUX9JYxtIVPGDs,PASS,17.0,21.0
+xXx0LFCBTNE4Wx7KUjfsG1nZc4I,xXx04jaaxCjDADdZfQejz3gbNFD,PASS,17.0,21.0
+xXx04PqApRQMPw55qx6cZsUfVSi,xXx04jaaxCjDADdZfQejz3gbNFD,"FAIL (SyntaxError: unterminated string literal (detected at line 249) (<unknown>, line 249))",ERR,ERR
+xXx04PqApRQMPw55qx6cZsUfVSi,xXx05DUkH2xBIGogZRAFJ8nnJHE,"FAIL (SyntaxError: unterminated f-string literal (detected at line 92) (<unknown>, line 92))",ERR,ERR

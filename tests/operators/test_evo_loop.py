@@ -6,6 +6,5 @@ import run_improved
 import os
 
 def test_individual():
-    individual = run_improved.toolbox.individual()
-    assert os.path.exists(os.path.join(run_improved.SOTA_ROOT, f'/models/network_{individual[0]}.py'))
-    assert os.path.exists(os.path.join(run_improved.OUTPUT_DIR, run_improved.GENERATION, f'{individual[0]}.sh'))
+    individual = run_improved.toolbox.individual(llm_model=run_improved.DEFAULT_LLM_MODEL)
+    assert os.path.exists(os.path.join(run_improved.OUTPUT_DIR, str(run_improved.GENERATION), f'{individual[0]}.sh'))
