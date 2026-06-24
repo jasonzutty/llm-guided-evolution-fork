@@ -13,6 +13,8 @@ first_test/
 .DS_Store
 mistralai
 **/*.egg-info
+data/
+!sota/Titanic/data/
 output/
 **/models/
 **/weights/
@@ -20,7 +22,7 @@ output/
 **/llmge_models/
 slurm-*.out
 *.pkl
-src/island_temp_script.sh
+src/island_temp_*
 cifar10
 uv.lock
 pareto_fronts
@@ -43,5 +45,6 @@ analysis/results/analysis/*
 *.safetensors
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
+*run_metrics
 *.code-workspace
 
