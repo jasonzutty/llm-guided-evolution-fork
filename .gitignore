@@ -21,7 +21,7 @@ output/
 **/llmge_models/
 slurm-*.out
 *.pkl
-src/island_temp_script.sh
+src/island_temp_*
 cifar10/
 uv.lock
 pareto_fronts
@@ -46,6 +46,14 @@ sota/ExquisiteNetV2/cifar-10-python
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
 run_metrics/
+# Ignore top-level files in analysis/ except PIPELINE.md, README.md, and *.py
+analysis/*
+!analysis/PIPELINE.md
+!analysis/README.md
+!analysis/*.py
+!analysis/*/
 sota/ExquisiteNetV2/cifar-10-python/
 *.code-workspace
+mujoco_rl_output
+previous_runs
 
