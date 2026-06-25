@@ -6,6 +6,8 @@ import os
 import glob
 import time
 import numpy as np
+import torch.nn as nn
+import inspect
 import transformers
 from torch import bfloat16, float16
 from utils.privit import *
@@ -13,6 +15,7 @@ from cfg.constants import *
 from utils.print_utils import *
 from utils.rag_metrics import record_metric
 from rag.runtime import get_runtime
+from datetime import datetime
 
 
 from typing import Optional
@@ -23,6 +26,10 @@ import textwrap
 from transformers import AutoTokenizer
 from google import genai
 from google.genai import types
+
+from huggingface_hub.utils import HfHubHTTPError
+import os, time, random
+import json
 
 def retrieve_base_code(idx):
     """Retrieves base code for quality control."""
@@ -669,6 +676,82 @@ def mutate_prompt(llm_model, template, inference_submission=INFERENCE_SUBMISSION
     output = output + "\n```python\n{}\n```"
     with open(os.path.join(path, "mutant{}.txt".format(llm_model)), 'w') as file:
         file.write(output)
+
+
+def generate_augmented_code(txt2llm, augment_idx, apply_quality_control, top_p, llm_model, temperature, mutation_label=None):
+    """
+    Generate augmented code using the specified LLM model.
+
+    Parameters
+    ----------
+    txt2llm : str
+        The prompt text to send to the LLM (should already be RAG-augmented)
+    augment_idx : int
+        Index of the code segment being augmented (for quality control)
+    apply_quality_control : bool
+        Whether to apply quality control to the generated code
+    top_p : float
+        Top-p sampling parameter
+    llm_model : str
+        LLM model identifier
+    temperature : float
+        Temperature parameter for generation
+    mutation_label : str, optional
+        Mutation type label for metrics tracking
+
+    Returns
+    -------
+    str or None
+        The generated and cleaned code, or None if generation failed
+    """
+    llm_code_generator, qc_func = get_llm_code_generator(llm_model)
+
+    box_print("PROMPT TO LLM (RAG-augmented)" if mutation_label else "PROMPT TO LLM",
+              print_bbox_len=120, new_line_end=False)
+    if mutation_label:
+        print(f"[Mutation Type: {mutation_label}]")
+    print(txt2llm)
+
+    try:
+        # Generate code using the selected LLM
+        code_from_llm = llm_code_generator(txt2llm, top_p=top_p, temperature=temperature)
+
+        box_print("TEXT FROM LLM", print_bbox_len=60, new_line_end=False)
+        print(code_from_llm)
+
+        # Clean the generated code
+        code_from_llm = clean_code_from_llm(code_from_llm)
+
+        # Check if cleaning was successful
+        if code_from_llm == "ERROR" or not code_from_llm:
+            print("Failed to extract valid code from LLM response")
+            return None
+
+        # Apply quality control if requested
+        if apply_quality_control:
+            base_code = retrieve_base_code(augment_idx)
+            code_from_llm = qc_func(code_from_llm, base_code)
+
+        # Record metrics for RAG-enabled generation
+        if mutation_label:
+            record_metric("llm_code_generation", {
+                "mutation_type": mutation_label,
+                "model": llm_model,
+                "success": True
+            })
+
+        return code_from_llm
+
+    except Exception as e:
+        print(f"Error generating augmented code: {e}")
+        if mutation_label:
+            record_metric("llm_code_generation", {
+                "mutation_type": mutation_label,
+                "model": llm_model,
+                "success": False,
+                "error": str(e)
+            })
+        return None
 
 
 def select_random_seed_model(gene_id, variant_dir, seed_models_dir, model_prefix="model"):
