@@ -10,9 +10,10 @@ if REPO_ROOT not in sys.path:
 
 from cfg.constants import *
 from utils.print_utils import box_print
-from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf, 
-                       llm_code_qc, str2bool, extract_note, generate_augmented_code, 
-                       clean_code_from_llm, retrieve_base_code)
+from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf,
+                       llm_code_qc, str2bool, extract_note, generate_augmented_code,
+                       clean_code_from_llm, retrieve_base_code,
+                       _augment_template_with_rag)
 
 
 def augment_network(input_filename_x, input_filename_y, output_filename,
@@ -53,11 +54,18 @@ def augment_network(input_filename_x, input_filename_y, output_filename,
     with open(template_path, 'r') as file:
         template_txt = file.read()
 
+    # Extract mutation type from template filename for RAG
+    mutation_label = os.path.splitext(template_fname)[0]
+    query_code = f"{x.strip()}\n---\n{y.strip()}"
+
+    # Apply RAG to augment template with retrieved context BEFORE inserting code
+    template_txt = _augment_template_with_rag(template_txt, mutation_label, query_code=query_code)
+
     # Add code to be augmented
     txt2llm = template_txt.format(x.strip(), y.strip())
     # Generate augmented code
     code_from_llm = generate_augmented_code(txt2llm, augment_idx, apply_quality_control,
-                                            top_p, llm_model, temperature)
+                                            top_p, llm_model, temperature, mutation_label)
     
     if not code_from_llm:
         code_from_llm = txt2llm
