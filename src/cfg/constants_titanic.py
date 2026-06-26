@@ -46,7 +46,7 @@ LLM_MODEL = 'llama3.3'
 PACE_ICE = True
 
 # LLM Availability Flag - set to False to run without LLM server
-LLM_AVAIL = False
+LLM_AVAIL = True
 SEED_MODELS_DIR = os.path.join(SOTA_ROOT, "models/llmge_models_seed")
 
 # Available LLM identifiers
@@ -135,77 +135,72 @@ RUNLINE_TMP = '{}_{}'
 EVAL_RUNLINE = "uv run python {} --model {} --variant_dir {VARIANT_DIR}"
 # Kill evaluation jobs that do not produce a terminal result in this window.
 EVAL_NO_PROGRESS_TIMEOUT_SECONDS = int(os.getenv("LLMGE_EVAL_NO_PROGRESS_TIMEOUT_SECONDS", str(40 * 60)))
-
-# Configuration validation: Check for vLLM-specific configs when USE_VLLM is False
-if not USE_VLLM:
-    _vllm_specific_vars = {
-        "TENSOR_PARALLEL_SIZE": os.getenv("TENSOR_PARALLEL_SIZE"),
-        "GPU_MEMORY_UTILIZATION": os.getenv("GPU_MEMORY_UTILIZATION"),
-        "MAX_MODEL_LEN": os.getenv("MAX_MODEL_LEN"),
-        "VLLM_DTYPE": os.getenv("VLLM_DTYPE"),
-        "VLLM_QUANTIZATION": os.getenv("VLLM_QUANTIZATION"),
-        "ENABLE_PREFIX_CACHING": os.getenv("ENABLE_PREFIX_CACHING"),
-        "VLLM_DISABLE_CUSTOM_ALL_REDUCE": os.getenv("VLLM_DISABLE_CUSTOM_ALL_REDUCE"),
-        "VLLM_WORKER_MULTIPROC_METHOD": os.getenv("VLLM_WORKER_MULTIPROC_METHOD"),
-        "VLLM_USE_FLASHINFER_SAMPLER": os.getenv("VLLM_USE_FLASHINFER_SAMPLER"),
-        "VLLM_ATTENTION_BACKEND": os.getenv("VLLM_ATTENTION_BACKEND"),
-        #: Retrieval-Augmented Generation (RAG) configuration
-        "RAG_ENABLED": os.environ.get("RAG_ENABLED", "true").lower() in {"1", "true", "yes"},
-        "RAG_DATA_DIR": os.environ.get("RAG_DATA_DIR", os.path.join(ROOT_DIR, "rag_data")),
-        "RAG_CODE_EMBED_MODEL": os.environ.get("RAG_CODE_EMBED_MODEL", "microsoft/codebert-base"),
-        "RAG_TEXT_EMBED_MODEL": os.environ.get("RAG_TEXT_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
-        "RAG_TOP_K": int(os.environ.get("RAG_TOP_K", 5)),
-        "RAG_MIN_ACCURACY": float(os.environ.get("RAG_MIN_ACCURACY", 0.9)),
-        "RAG_MAX_PARAMETERS": _parse_optional_float(os.environ.get("RAG_MAX_PARAMETERS")),
-        "RAG_MIN_SIMILARITY": float(os.environ.get("RAG_MIN_SIMILARITY", 0.3)),  # Minimum similarity threshold for filtering irrelevant results
-        "RAG_TEXT_TOP_K": int(os.environ.get("RAG_TEXT_TOP_K", 3)),  # Number of text chunks (PDFs, docs) to retrieve
-        "RAG_TEXT_CANDIDATE_K": int(os.environ.get("RAG_TEXT_CANDIDATE_K", 24)),
-        "RAG_TEXT_TOP_K_API": int(os.environ.get("RAG_TEXT_TOP_K_API", 2)),
-        "RAG_TEXT_TOP_K_PDF": int(os.environ.get("RAG_TEXT_TOP_K_PDF", 1)),
-        "RAG_USE_CODE_CONTEXT": os.environ.get("RAG_USE_CODE_CONTEXT", "true").lower() in {"1", "true", "yes"},
-        "RAG_USE_TEXT_CONTEXT": os.environ.get("RAG_USE_TEXT_CONTEXT", "true").lower() in {"1", "true", "yes"},
-        "RAG_RERANKER_ENABLED": os.environ.get("RAG_RERANKER_ENABLED", "false").lower() in {"1", "true", "yes"},
-        "RAG_RERANKER_MODEL": os.environ.get("RAG_RERANKER_MODEL", "BAAI/bge-reranker-v2-m3"),
-        #: Memory backend: episodic summaries of past mutations (successes + failures).
-        "RAG_MEMORY_STORE_ENABLED": os.environ.get("RAG_MEMORY_STORE_ENABLED", "false").lower() in {"1", "true", "yes"},
-        "RAG_MEMORY_TOP_K": int(os.environ.get("RAG_MEMORY_TOP_K", 3)),
-        "RAG_MEMORY_MIN_SIMILARITY": float(os.environ.get("RAG_MEMORY_MIN_SIMILARITY", 0.5)),
-
-        # --- Pareto-aware mutation logging policy ---------------------------------- #
-        #: Controls which events get the is_pareto_eligible=True flag.
-        #: "pareto"   — per-generation percentile windows (default, recommended).
-        #: "absolute" — falls back to RAG_MIN_ACCURACY / RAG_MAX_PARAMETERS thresholds.
-        "RAG_LOG_POLICY": os.environ.get("RAG_LOG_POLICY", "pareto").lower(),
-        #: Top-N% of test_accuracy within the generation that are marked eligible.
-        #: Uses math.ceil for inclusivity (e.g. 10% of 7 = ceil(0.7) = 1).
-        "RAG_LOG_TOP_ACCURACY_PCT": float(os.environ.get("RAG_LOG_TOP_ACCURACY_PCT", 10.0)),
-        #: Bottom-N% of total_params within the generation that are marked eligible.
-        #: Uses math.ceil for inclusivity.
-        "RAG_LOG_BOTTOM_PARAMS_PCT": float(os.environ.get("RAG_LOG_BOTTOM_PARAMS_PCT", 10.0)),
-
-
-
-    }
-
-    _set_vllm_vars = {k: v for k, v in _vllm_specific_vars.items() if v is not None}
-
-    if _set_vllm_vars:
-        _error_msg = (
-            "Configuration Error: vLLM-specific environment variables are set, but USE_VLLM=False.\n"
-            f"The following vLLM-specific variables are configured:\n"
-        )
-        for var, val in _set_vllm_vars.items():
-            _error_msg += f"  - {var}={val}\n"
-        _error_msg += (
-            "\nTo fix this issue, either:\n"
-            "  1. Set LLMGE_USE_VLLM=1 to enable vLLM, or\n"
-            "  2. Unset the vLLM-specific environment variables\n"
-        )
-        raise ValueError(_error_msg)
-
 # Helper function for RAG configuration
 def _parse_optional_float(val):
     return float(val) if val and val.strip() else None
+# Configuration validation: Check for vLLM-specific configs when USE_VLLM is False
+_vllm_specific_vars = {
+    "TENSOR_PARALLEL_SIZE": os.getenv("TENSOR_PARALLEL_SIZE"),
+    "GPU_MEMORY_UTILIZATION": os.getenv("GPU_MEMORY_UTILIZATION"),
+    "MAX_MODEL_LEN": os.getenv("MAX_MODEL_LEN"),
+    "VLLM_DTYPE": os.getenv("VLLM_DTYPE"),
+    "VLLM_QUANTIZATION": os.getenv("VLLM_QUANTIZATION"),
+    "ENABLE_PREFIX_CACHING": os.getenv("ENABLE_PREFIX_CACHING"),
+    "VLLM_DISABLE_CUSTOM_ALL_REDUCE": os.getenv("VLLM_DISABLE_CUSTOM_ALL_REDUCE"),
+    "VLLM_WORKER_MULTIPROC_METHOD": os.getenv("VLLM_WORKER_MULTIPROC_METHOD"),
+    "VLLM_USE_FLASHINFER_SAMPLER": os.getenv("VLLM_USE_FLASHINFER_SAMPLER"),
+    "VLLM_ATTENTION_BACKEND": os.getenv("VLLM_ATTENTION_BACKEND"),
+    #: Retrieval-Augmented Generation (RAG) configuration
+    "RAG_ENABLED": os.environ.get("RAG_ENABLED", "true").lower() in {"1", "true", "yes"},
+    "RAG_DATA_DIR": os.environ.get("RAG_DATA_DIR", os.path.join(ROOT_DIR, "rag_data")),
+    "RAG_CODE_EMBED_MODEL": os.environ.get("RAG_CODE_EMBED_MODEL", "microsoft/codebert-base"),
+    "RAG_TEXT_EMBED_MODEL": os.environ.get("RAG_TEXT_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
+    "RAG_TOP_K": int(os.environ.get("RAG_TOP_K", 5)),
+    "RAG_MIN_ACCURACY": float(os.environ.get("RAG_MIN_ACCURACY", 0.9)),
+    "RAG_MAX_PARAMETERS": _parse_optional_float(os.environ.get("RAG_MAX_PARAMETERS")),
+    "RAG_MIN_SIMILARITY": float(os.environ.get("RAG_MIN_SIMILARITY", 0.3)),  # Minimum similarity threshold for filtering irrelevant results
+    "RAG_TEXT_TOP_K": int(os.environ.get("RAG_TEXT_TOP_K", 3)),  # Number of text chunks (PDFs, docs) to retrieve
+    "RAG_TEXT_CANDIDATE_K": int(os.environ.get("RAG_TEXT_CANDIDATE_K", 24)),
+    "RAG_TEXT_TOP_K_API": int(os.environ.get("RAG_TEXT_TOP_K_API", 2)),
+    "RAG_TEXT_TOP_K_PDF": int(os.environ.get("RAG_TEXT_TOP_K_PDF", 1)),
+    "RAG_USE_CODE_CONTEXT": os.environ.get("RAG_USE_CODE_CONTEXT", "true").lower() in {"1", "true", "yes"},
+    "RAG_USE_TEXT_CONTEXT": os.environ.get("RAG_USE_TEXT_CONTEXT", "true").lower() in {"1", "true", "yes"},
+    "RAG_RERANKER_ENABLED": os.environ.get("RAG_RERANKER_ENABLED", "false").lower() in {"1", "true", "yes"},
+    "RAG_RERANKER_MODEL": os.environ.get("RAG_RERANKER_MODEL", "BAAI/bge-reranker-v2-m3"),
+    #: Memory backend: episodic summaries of past mutations (successes + failures).
+    "RAG_MEMORY_STORE_ENABLED": os.environ.get("RAG_MEMORY_STORE_ENABLED", "false").lower() in {"1", "true", "yes"},
+    "RAG_MEMORY_TOP_K": int(os.environ.get("RAG_MEMORY_TOP_K", 3)),
+    "RAG_MEMORY_MIN_SIMILARITY": float(os.environ.get("RAG_MEMORY_MIN_SIMILARITY", 0.5)),
+    # --- Pareto-aware mutation logging policy ---------------------------------- #
+    #: Controls which events get the is_pareto_eligible=True flag.
+    #: "pareto"   — per-generation percentile windows (default, recommended).
+    #: "absolute" — falls back to RAG_MIN_ACCURACY / RAG_MAX_PARAMETERS thresholds.
+    "RAG_LOG_POLICY": os.environ.get("RAG_LOG_POLICY", "pareto").lower(),
+    #: Top-N% of test_accuracy within the generation that are marked eligible.
+    #: Uses math.ceil for inclusivity (e.g. 10% of 7 = ceil(0.7) = 1).
+    "RAG_LOG_TOP_ACCURACY_PCT": float(os.environ.get("RAG_LOG_TOP_ACCURACY_PCT", 10.0)),
+    #: Bottom-N% of total_params within the generation that are marked eligible.
+    #: Uses math.ceil for inclusivity.
+    "RAG_LOG_BOTTOM_PARAMS_PCT": float(os.environ.get("RAG_LOG_BOTTOM_PARAMS_PCT", 10.0)),
+}
+
+    
+
+if not USE_VLLM:
+    _error_msg = (
+        "WARNING: Configuration Error: vLLM-specific environment variables are set, but USE_VLLM=False.\n"
+        f"The following vLLM-specific variables are configured: but will not affect the evolutionary loop\n"
+    )
+    for var, val in _vllm_specific_vars.items():
+        _error_msg += f"  - {var}={val}\n"
+    _error_msg += (
+        "\nTo fix this issue, either:\n"
+        "  1. Set LLMGE_USE_VLLM=1 to enable vLLM, or\n"
+        "  2. Unset the vLLM-specific environment variables\n"
+    )
+    print(_error_msg)
+
+
 
 # Export RAG configuration as module-level constants
 RAG_ENABLED = os.environ.get("RAG_ENABLED", "true").lower() in {"1", "true", "yes"}

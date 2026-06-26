@@ -34,7 +34,6 @@ dependencies = [
     "scikit-learn>=1.7.2",
     "imblearn",
     "matplotlib",
-    "tensorflow>=2.20.0",
     "streamlit>=1.58.0",
     "jsonschema",
     "faiss-cpu>=1.7.4",
@@ -42,7 +41,7 @@ dependencies = [
     "sentence-transformers>=2.2.0", # Text embeddings
     "pymupdf>=1.23.0",            # PDF processing
     "pdfplumber>=0.11.10",
-    "tf-keras>=2.21.0",
+    "vllm == 0.8.5",
 ]
 
 [tool.pytest.ini_options]

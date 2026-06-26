@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HOSTNAME_FILE = ROOT / "hostname.log"
-PORT = int(os.getenv("LLMGE_SERVER_PORT", "8137"))
+PORT = int(os.getenv("LLMGE_SERVER_PORT", "2244"))
 READY_TIMEOUT = int(os.getenv("LLM_SERVER_READY_TIMEOUT", "3600"))
 READY_CHECK_INTERVAL = int(os.getenv("LLM_SERVER_READY_CHECK_INTERVAL", "10"))
 
@@ -88,10 +88,12 @@ def _start_slurm_server():
         check=False,
     )
     if result.returncode != 0:
+        errorMessage = "Failed to submit LLM server job with sbatch.\n"+\
+        f"stdout:\n{result.stdout}\n"+\
+        f"stderr:\n{result.stderr}"
+        print(errorMessage)
         raise RuntimeError(
-            "Failed to submit LLM server job with sbatch.\n"
-            f"stdout:\n{result.stdout}\n"
-            f"stderr:\n{result.stderr}"
+            errorMessage
         )
     job_id = result.stdout.strip()
     print(f"Submitted LLM test server job {job_id}", flush=True)
@@ -142,7 +144,7 @@ def _stop_local_server():
 def pytest_sessionstart(session):
     if os.getenv("LLMGE_AUTO_START_SERVER", "1") == "0":
         return
-
+    print("why")
     hostname = _hostname_from_file()
     if _server_is_ready(hostname):
         print(f"Using existing LLM test server at {_server_url(hostname)}", flush=True)

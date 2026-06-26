@@ -10,10 +10,11 @@ sota/Pointnet_Pointnet2_pytorch/results/
 0/
 1/
 first_test/
-data/
 .DS_Store
 mistralai
 **/*.egg-info
+data/
+!sota/Titanic/data/
 output/
 **/models/
 **/weights/
@@ -21,12 +22,13 @@ output/
 **/llmge_models/
 slurm-*.out
 *.pkl
-src/island_temp_script.sh
+src/island_temp_*
 cifar10
 uv.lock
 pareto_fronts
 */run_job_outputs
 .venv/
+weights/
 venv/
 *.pyc
 *.pyo
@@ -44,6 +46,7 @@ analysis/results/analysis/*
 *.safetensors
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
-*run_metrics
+run_metrics/
+**/cifar-10-python/
 *.code-workspace
 
