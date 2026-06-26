@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
-from cfg.constants import RUN_METRICS_DIR
+from src.cfg.constants import RUN_METRICS_DIR
 
 METRICS_FILE = Path(RUN_METRICS_DIR) / "rag_metrics.jsonl"
 
