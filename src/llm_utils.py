@@ -1,6 +1,5 @@
 import argparse
 import sys
-sys.path.append("src")
 import re
 import os
 import glob
@@ -10,12 +9,13 @@ import torch.nn as nn
 import inspect
 import transformers
 from torch import bfloat16, float16
-from utils.privit import *
-from cfg.constants import *
-from utils.print_utils import *
-from utils.rag_metrics import record_metric
-from rag.runtime import get_runtime
 from datetime import datetime
+
+from src.utils.privit import *
+from src.cfg.constants import *
+from src.utils.print_utils import *
+from src.utils.rag_metrics import record_metric
+from src.rag.runtime import get_runtime
 
 
 from typing import Optional
@@ -89,24 +89,6 @@ def get_llm_code_generator(llm_model):
             llm_code_generator = submit_mixtral_hf
         qc_func = llm_code_qc_hf
     return llm_code_generator, qc_func
-def _augment_template_with_rag(template_text: str, mutation_label: str | None, query_code: str | None = None) -> str:
-    """Augment prompt template with RAG-retrieved context."""
-    if not RAG_ENABLED:
-        return template_text
-    
-    runtime = get_runtime()
-    augmented, retrieved = runtime.enhance_template(
-        template=template_text,
-        mutation_type=mutation_label,
-        query_code=query_code
-    )
-    
-    record_metric("rag_prompt_enhancement", {
-        "mutation_type": mutation_label,
-        "num_retrieved": len(retrieved),
-    })
-    
-    return augmented
 
 
 def extract_note(txt):
@@ -132,7 +114,9 @@ def _augment_template_with_rag(template_text: str, mutation_label: str | None, q
     """
     runtime = get_runtime()
     if runtime is None:
+        box_print("RAG Runtime: None (RAG disabled or not initialized)", print_bbox_len=80, new_line_end=False)
         return template_text
+
     start = time.perf_counter()
     augmented_template, mutations = runtime.enhance_template(
         template=template_text,
@@ -141,12 +125,21 @@ def _augment_template_with_rag(template_text: str, mutation_label: str | None, q
         gene_id=None,
     )
     duration_ms = (time.perf_counter() - start) * 1000
+
+    num_mutations = len(mutations) if mutations else 0
+    box_print(f"RAG Enhancement: Retrieved {num_mutations} mutations in {duration_ms:.1f}ms",
+              print_bbox_len=80, new_line_end=False)
+
+    if num_mutations == 0:
+        box_print("RAG: No mutations found in vector store (empty or first run)",
+                  print_bbox_len=80, new_line_end=False)
+
     record_metric(
         "rag_prompt_enhancement",
         {
             "mutation_type": mutation_label,
             "retrieval_ms": duration_ms,
-            "retrieved_mutations": len(mutations),
+            "retrieved_mutations": num_mutations,
             "prompt_tokens": len(augmented_template.split()),
         },
     )
