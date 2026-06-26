@@ -1,0 +1,196 @@
+---------------------------------------
+Begin Slurm Prolog: Jun-15-2026 16:28:30
+Job ID:    5400259
+User ID:   mgullapalli6
+Account:   math
+Job name:  LLMGE01_Server
+Partition: coe-gpu
+QOS:       coe-ice
+---------------------------------------
+launching LLM Server
+atl1-1-03-014-30-0.pace.gatech.edu
+Using UV cache: /tmp/uv-cache-5400259
+Using XDG cache: /tmp/uv-cache-5400259/xdg
+CUDA_VISIBLE_DEVICES=0,1
+NCCL_IB_DISABLE=1 NCCL_P2P_DISABLE=1 NCCL_SHM_DISABLE=0
+TENSOR_PARALLEL_SIZE=2
+VLLM_DISABLE_CUSTOM_ALL_REDUCE=true
+VLLM_USE_FLASHINFER_SAMPLER=0
+VLLM_ATTENTION_BACKEND=FLASH_ATTN
+FLASHINFER_CACHE_DIR=/tmp/uv-cache-5400259/xdg/flashinfer
+Writing server hostname 'atl1-1-03-014-30-0.pace.gatech.edu' to file: /home/hice1/mgullapalli6/scratch/llmGE/llm-guided-evolution-infrastructure/hostname.log
+Load balancing DISABLED
+Starting LLM server on host: atl1-1-03-014-30-0.pace.gatech.edu (count=1, backend=vllm)
+Using vLLM package: vllm==0.8.5
+Submitting island controller (count=1)
+Submitted batch job 5400262
+Downloading nvidia-cusparse-cu12 (197.8MiB)
+Downloading sympy (5.9MiB)
+Downloading openai (1.3MiB)
+Downloading setuptools (1.1MiB)
+Downloading tiktoken (1.1MiB)
+Downloading nvidia-cublas-cu12 (346.6MiB)
+Downloading grpcio (6.5MiB)
+Downloading aiohttp (1.7MiB)
+Downloading networkx (1.9MiB)
+Downloading pygments (1.2MiB)
+Downloading nvidia-cufft-cu12 (201.7MiB)
+Downloading numpy (15.8MiB)
+Downloading sentencepiece (1.3MiB)
+Downloading pydantic-core (1.9MiB)
+Downloading nvidia-curand-cu12 (53.7MiB)
+Downloading transformers (11.1MiB)
+Downloading pillow (6.3MiB)
+Downloading pycountry (7.7MiB)
+Downloading nvidia-nccl-cu12 (179.9MiB)
+Downloading nvidia-cusolver-cu12 (122.0MiB)
+Downloading nvidia-cuda-cupti-cu12 (13.2MiB)
+Downloading nvidia-cudnn-cu12 (634.0MiB)
+Downloading llvmlite (40.4MiB)
+Downloading uvloop (4.2MiB)
+Downloading opencv-python-headless (57.6MiB)
+Downloading nvidia-cuda-nvrtc-cu12 (23.5MiB)
+Downloading mistral-common (6.2MiB)
+Downloading triton (241.4MiB)
+Downloading nvidia-nvjitlink-cu12 (20.1MiB)
+Downloading numba (3.7MiB)
+Downloading torchvision (6.9MiB)
+Downloading torch (731.1MiB)
+Downloading llguidance (14.3MiB)
+Downloading nvidia-cusparselt-cu12 (143.1MiB)
+Downloading xformers (42.2MiB)
+Downloading ray (70.3MiB)
+Downloading tokenizers (3.1MiB)
+Downloading torchaudio (3.2MiB)
+Downloading cupy-cuda12x (127.3MiB)
+Downloading xgrammar (4.6MiB)
+Downloading scipy (34.0MiB)
+Downloading hf-xet (3.0MiB)
+Downloading vllm (311.3MiB)
+ Downloaded tiktoken
+ Downloaded sentencepiece
+ Downloaded pygments
+ Downloaded aiohttp
+ Downloaded pydantic-core
+ Downloaded setuptools
+ Downloaded networkx
+ Downloaded hf-xet
+ Downloaded tokenizers
+ Downloaded torchaudio
+ Downloaded numba
+ Downloaded xgrammar
+ Downloaded uvloop
+ Downloaded openai
+ Downloaded pillow
+ Downloaded mistral-common
+ Downloaded grpcio
+ Downloaded pycountry
+ Downloaded torchvision
+ Downloaded sympy
+ Downloaded nvidia-cuda-cupti-cu12
+ Downloaded llguidance
+ Downloaded numpy
+ Downloaded transformers
+ Downloaded nvidia-nvjitlink-cu12
+ Downloaded nvidia-cuda-nvrtc-cu12
+ Downloaded scipy
+ Downloaded llvmlite
+ Downloaded xformers
+ Downloaded nvidia-curand-cu12
+ Downloaded opencv-python-headless
+ Downloaded ray
+ Downloaded nvidia-cusolver-cu12
+ Downloaded nvidia-cusparselt-cu12
+ Downloaded cupy-cuda12x
+ Downloaded nvidia-nccl-cu12
+ Downloaded nvidia-cusparse-cu12
+ Downloaded nvidia-cufft-cu12
+ Downloaded triton
+ Downloaded vllm
+ Downloaded nvidia-cublas-cu12
+ Downloaded nvidia-cudnn-cu12
+ Downloaded torch
+Installed 152 packages in 108ms
+[vLLM] Run Hash: c7faebb6c938a165
+[vLLM] Metrics: /home/hice1/mgullapalli6/scratch/llmGE/llm-guided-evolution-infrastructure/runs/server-only/metrics/latency-c7faebb6c938a165.json
+INFO:     Started server process [32612]
+INFO:     Waiting for application startup.
+[2026-06-15 16:29:07] ===== vLLM SERVER STARTUP =====
+INFO 06-15 16:29:16 [__init__.py:239] Automatically detected platform cuda.
+[vLLM] Loading model: /storage/ice-shared/vip-vvk/llm_storage/zai-org/GLM-4.7-Flash
+[vLLM] model_id=zai-org/GLM-4.7-Flash
+[vLLM] model_revision=7dd20894a642a0aa287e9827cb1a1f7f91386b67
+[vLLM] model_version=4.7
+[vLLM] model_quantization=bf16
+[vLLM] tensor_parallel_size=2
+[vLLM] gpu_memory_utilization=0.95
+[vLLM] max_model_len=8192
+[vLLM] dtype=bfloat16
+[vLLM] quantization=None
+[vLLM] enable_prefix_caching=True
+[vLLM] disable_custom_all_reduce=True
+ERROR:    Traceback (most recent call last):
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/transformers/models/auto/configuration_auto.py", line 1309, in from_pretrained
+    config_class = CONFIG_MAPPING[config_dict["model_type"]]
+                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/transformers/models/auto/configuration_auto.py", line 1004, in __getitem__
+    raise KeyError(key)
+KeyError: 'glm4_moe_lite'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/starlette/routing.py", line 694, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/starlette/routing.py", line 571, in __aenter__
+    await self._router.startup()
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/starlette/routing.py", line 671, in startup
+    await handler()
+  File "/storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure/server_vllm.py", line 346, in startup_event
+    get_llm()
+  File "/storage/ice1/2/5/mgullapalli6/llmGE/llm-guided-evolution-infrastructure/server_vllm.py", line 216, in get_llm
+    _llm = LLM(**llm_kwargs)
+           ^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/utils.py", line 1161, in inner
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/entrypoints/llm.py", line 247, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/engine/llm_engine.py", line 503, in from_engine_args
+    vllm_config = engine_args.create_engine_config(usage_context)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 1099, in create_engine_config
+    model_config = self.create_model_config()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 987, in create_model_config
+    return ModelConfig(
+           ^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/config.py", line 451, in __init__
+    hf_config = get_config(self.hf_config_path or self.model,
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/transformers_utils/config.py", line 344, in get_config
+    raise e
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/vllm/transformers_utils/config.py", line 324, in get_config
+    config = AutoConfig.from_pretrained(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/uv-cache-5400259/archive-v0/sw2jUCe6ndsJcWaR1yHPp/lib/python3.12/site-packages/transformers/models/auto/configuration_auto.py", line 1311, in from_pretrained
+    raise ValueError(
+ValueError: The checkpoint you are trying to load has model type `glm4_moe_lite` but Transformers does not recognize this architecture. This could be because of an issue with the checkpoint, or because your version of Transformers is out of date.
+
+You can update Transformers with the command `pip install --upgrade transformers`. If this does not work, and the checkpoint is very new, then there may not be a release version that supports this model yet. In this case, you can get the most up-to-date code by installing Transformers from source with the command `pip install git+https://github.com/huggingface/transformers.git`
+
+ERROR:    Application startup failed. Exiting.
+---------------------------------------
+Begin Slurm Epilog: Jun-15-2026 16:29:20
+Job ID:        5400259
+User ID:       mgullapalli6
+Account:       math
+Job name:      LLMGE01_Server
+Resources:     cpu=16,gres/gpu:h200=2,mem=160G,node=1
+Rsrc Used:     cput=00:13:20,vmem=0,walltime=00:00:50,mem=8955804K,energy_used=0
+Partition:     coe-gpu
+QOS:           coe-ice
+Nodes:         atl1-1-03-014-30-0
+---------------------------------------

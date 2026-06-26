@@ -334,7 +334,15 @@ if __name__ == "__main__":
             print(f"Generating Island {llm_name} with prompts {prompt_group}", flush=True)
             checkpoint_path = os.path.join(checkpoints, f"island_{llm_name}_{prompt_slug}")
             island_script_path = island_script.format(ISLAND_NUM=island_num)
-            job_id = submit_run(island_script_path, ISLANDS_BASH_SCRIPT_TEMPLATE.format(checkpoint_path, global_path, llm_name, prompt_group))
+            job_id = submit_run(
+                island_script_path,
+                ISLANDS_BASH_SCRIPT_TEMPLATE.format(
+                    checkpoint_path=checkpoint_path,
+                    global_path=global_path,
+                    llm_model=llm_name,
+                    prompt_group=prompt_group,
+                ),
+            )
             job_ids.append(job_id)
         
         # check island generation jobs for completion
