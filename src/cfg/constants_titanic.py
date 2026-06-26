@@ -72,7 +72,8 @@ ISLAND_LLMS = [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_
 ENVIRONMENT_DIR = os.path.join(ROOT_DIR, ".venv")
 SLURM_CONFIG_DIR = os.path.join(ROOT_DIR, "slurm-config/")
 LOCAL_LLM = os.getenv("LOCAL_LLM", "true").lower() in ("true", "1", "yes")
-LLM_SERVER_BACKEND = os.getenv("LLMGE_SERVER_BACKEND", "vllm")
+LLM_SERVER_BACKEND = "vllm" if USE_VLLM else "normal"
+print(LLM_SERVER_BACKEND)
 HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
 
 # Multi-island settings

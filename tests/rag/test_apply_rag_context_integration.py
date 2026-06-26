@@ -269,7 +269,7 @@ def _load_run_improved() -> Any:
 # Integration tests
 # ---------------------------------------------------------------------------
 
-@pytest.mark.integration
+
 class TestApplyRagContextIntegration:
     """End-to-end smoke: _apply_rag_context through RagClient → RagService."""
 

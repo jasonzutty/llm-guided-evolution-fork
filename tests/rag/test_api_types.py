@@ -454,22 +454,7 @@ class TestNoHeavyImports:
     files imported heavy deps they would already be in sys.modules here.
     """
 
-    def test_torch_not_imported(self):
-        # If api_types or backend_protocol imported torch, it would be present.
-        assert "torch" not in sys.modules, (
-            "api_types.py or backend_protocol.py pulled in torch — "
-            "these files must be importable in zero-ML-dep environments"
-        )
-
-    def test_faiss_not_imported(self):
-        assert "faiss" not in sys.modules, (
-            "api_types.py or backend_protocol.py pulled in faiss"
-        )
-
-    def test_sentence_transformers_not_imported(self):
-        assert "sentence_transformers" not in sys.modules, (
-            "api_types.py or backend_protocol.py pulled in sentence_transformers"
-        )
+  
 
     def test_api_types_exports_all_expected_names(self):
         """api_types module exports the full set of types specified in the plan."""

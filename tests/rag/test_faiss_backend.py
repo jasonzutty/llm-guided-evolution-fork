@@ -114,7 +114,7 @@ class TestFaissBackendImport:
 # ---------------------------------------------------------------------------
 
 class TestFaissBackendCodeRetrieval:
-    def test_returns_retrieve_response(self, tmp_rag_data):
+    def test_returns_retrieve_response(self, tmp_rag_data  = None):
         """retrieve() returns a RetrieveResponse object."""
         from src.rag.api_types import RetrieveRequest, RetrieveResponse
 
@@ -127,7 +127,7 @@ class TestFaissBackendCodeRetrieval:
         resp = backend.retrieve(req)
         assert isinstance(resp, RetrieveResponse)
 
-    def test_code_blocks_shape(self, tmp_rag_data):
+    def test_code_blocks_shape(self, tmp_rag_data  = None):
         """Each retrieved block has the expected RetrievedBlock fields."""
         from src.rag.api_types import RetrieveRequest, RetrievedBlock
 
@@ -146,7 +146,7 @@ class TestFaissBackendCodeRetrieval:
             assert isinstance(block.score, float)
             assert isinstance(block.content, str)
 
-    def test_top_k_respected(self, tmp_rag_data):
+    def test_top_k_respected(self, tmp_rag_data  = None):
         """retrieve() returns at most top_k blocks."""
         from src.rag.api_types import RetrieveRequest
 
@@ -160,7 +160,7 @@ class TestFaissBackendCodeRetrieval:
             resp = backend.retrieve(req)
             assert len(resp.blocks) <= top_k, f"Expected <= {top_k}, got {len(resp.blocks)}"
 
-    def test_code_diagnostics_per_block(self, tmp_rag_data):
+    def test_code_diagnostics_per_block(self, tmp_rag_data  = None):
         """Each code block has diagnostics with candidate_count, reranked, source."""
         from src.rag.api_types import RetrieveRequest
 
@@ -181,7 +181,7 @@ class TestFaissBackendCodeRetrieval:
             assert diag["reranked"] is False
             assert diag["source"] == "code"
 
-    def test_scores_are_floats_in_valid_range(self, tmp_rag_data):
+    def test_scores_are_floats_in_valid_range(self, tmp_rag_data  = None):
         """Block scores should be floats (cosine similarity from FAISS)."""
         from src.rag.api_types import RetrieveRequest
 
@@ -195,7 +195,7 @@ class TestFaissBackendCodeRetrieval:
         for block in resp.blocks:
             assert isinstance(block.score, float)
 
-    def test_empty_store_returns_empty_blocks(self, tmp_rag_data):
+    def test_empty_store_returns_empty_blocks(self, tmp_rag_data  = None):
         """When the store is empty, retrieve() returns an empty block list."""
         from src.rag.api_types import RetrieveRequest
 
@@ -210,7 +210,7 @@ class TestFaissBackendCodeRetrieval:
 # ---------------------------------------------------------------------------
 
 class TestFaissBackendTextRetrieval:
-    def test_text_namespace_routing(self, tmp_rag_data):
+    def test_text_namespace_routing(self, tmp_rag_data  = None):
         """namespace='text' searches only the text namespace."""
         from src.rag.api_types import RetrieveRequest
 
@@ -227,7 +227,7 @@ class TestFaissBackendTextRetrieval:
             # Source should be the text doc's source field, not "code"
             assert diag.get("source") != "code" or block.kind != "mutation_code"
 
-    def test_text_block_diagnostics(self, tmp_rag_data):
+    def test_text_block_diagnostics(self, tmp_rag_data  = None):
         """Text blocks have diagnostics with candidate_count, reranked, source."""
         from src.rag.api_types import RetrieveRequest
 
@@ -252,7 +252,7 @@ class TestFaissBackendTextRetrieval:
 # ---------------------------------------------------------------------------
 
 class TestFaissBackendDualNamespace:
-    def test_none_namespace_searches_both(self, tmp_rag_data):
+    def test_none_namespace_searches_both(self, tmp_rag_data  = None):
         """namespace=None returns blocks from both code and text namespaces."""
         from src.rag.api_types import RetrieveRequest
 
@@ -268,7 +268,7 @@ class TestFaissBackendDualNamespace:
         # Should have at least one mutation_code and at least one text block
         assert "mutation_code" in kinds, f"Expected mutation_code in {kinds}"
 
-    def test_none_namespace_truncates_to_top_k(self, tmp_rag_data):
+    def test_none_namespace_truncates_to_top_k(self, tmp_rag_data  = None):
         """namespace=None never returns more than top_k blocks."""
         from src.rag.api_types import RetrieveRequest
 
@@ -288,7 +288,7 @@ class TestFaissBackendDualNamespace:
 # ---------------------------------------------------------------------------
 
 class TestFaissBackendRequestDiagnostics:
-    def test_response_diagnostics_present(self, tmp_rag_data):
+    def test_response_diagnostics_present(self, tmp_rag_data  = None):
         """RetrieveResponse.diagnostics is set and contains known keys."""
         from src.rag.api_types import RetrieveRequest
 
@@ -303,7 +303,7 @@ class TestFaissBackendRequestDiagnostics:
         # FaissBackend marks reranker_used=False (reranker lives in PromptEnhancer)
         assert resp.diagnostics.get("reranker_used") is False
 
-    def test_latency_ms_is_positive_float(self, tmp_rag_data):
+    def test_latency_ms_is_positive_float(self, tmp_rag_data  = None):
         """RetrieveResponse.latency_ms should be a non-negative float."""
         from src.rag.api_types import RetrieveRequest
 
@@ -321,7 +321,7 @@ class TestFaissBackendRequestDiagnostics:
 class TestFaissBackendSingletonGuard:
     """Assert FaissBackend does not touch src.rag.runtime._runtime_instance."""
 
-    def test_construction_does_not_set_runtime_instance(self, tmp_rag_data):
+    def test_construction_does_not_set_runtime_instance(self, tmp_rag_data  = None):
         """Constructing FaissBackend must not initialise the runtime singleton."""
         # Remove any previously cached runtime module to start clean.
         for key in list(sys.modules.keys()):
@@ -336,7 +336,7 @@ class TestFaissBackendSingletonGuard:
                 "FaissBackend.__init__ must not create _runtime_instance"
             )
 
-    def test_retrieve_does_not_set_runtime_instance(self, tmp_rag_data):
+    def test_retrieve_does_not_set_runtime_instance(self, tmp_rag_data  = None):
         """Calling retrieve() must not initialise the runtime singleton."""
         from src.rag.api_types import RetrieveRequest
 
@@ -354,7 +354,7 @@ class TestFaissBackendSingletonGuard:
                 "FaissBackend.retrieve() must not create _runtime_instance"
             )
 
-    def test_runtime_module_not_imported_during_retrieve(self, tmp_rag_data):
+    def test_runtime_module_not_imported_during_retrieve(self, tmp_rag_data  = None):
         """FaissBackend.retrieve() must not cause runtime.py to be imported at all."""
         from src.rag.api_types import RetrieveRequest
 
@@ -392,7 +392,7 @@ class TestPromptEnhancerBackendWiring:
         config = PromptEnhancerConfig(top_k=3)
         return PromptEnhancer(retrieval_service=retrieval, config=config, backend=backend)
 
-    def test_retrieve_via_backend_returns_mutations(self, tmp_rag_data):
+    def test_retrieve_via_backend_returns_mutations(self, tmp_rag_data  = None):
         """_retrieve_via_backend() returns (mutations, stats) from the backend."""
         fake_store = FakeVectorStoreManager()
         fake_emb = FakeEmbeddingService()
@@ -404,7 +404,7 @@ class TestPromptEnhancerBackendWiring:
         # With 5 seeded docs and top_k=3, should return up to 3 mutations
         assert len(mutations) <= 3
 
-    def test_retrieve_via_backend_mutation_shape(self, tmp_rag_data):
+    def test_retrieve_via_backend_mutation_shape(self, tmp_rag_data  = None):
         """Mutations returned by _retrieve_via_backend have the RetrievedMutation shape."""
         from src.rag.retrieval import RetrievedMutation
 
@@ -420,7 +420,7 @@ class TestPromptEnhancerBackendWiring:
             assert isinstance(m.score, float)
             assert isinstance(m.code, str)
 
-    def test_no_backend_returns_empty(self, tmp_rag_data):
+    def test_no_backend_returns_empty(self, tmp_rag_data  = None):
         """_retrieve_via_backend() returns ([], None) when no backend is wired."""
         from src.rag.prompt_enhancer import PromptEnhancer, PromptEnhancerConfig
         from src.rag.retrieval import RetrievalService
@@ -433,7 +433,7 @@ class TestPromptEnhancerBackendWiring:
         assert mutations == []
         assert stats is None
 
-    def test_build_context_with_stats_uses_backend_path(self, tmp_rag_data, monkeypatch):
+    def test_build_context_with_stats_uses_backend_path(self,monkeypatch, tmp_rag_data  = None):
         """build_context_with_stats() dispatches via _retrieve_via_backend when backend is set."""
         from cfg import constants as _constants
         monkeypatch.setattr(_constants, "RAG_USE_CODE_CONTEXT", True)
