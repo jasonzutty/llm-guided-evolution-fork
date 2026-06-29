@@ -10,11 +10,11 @@ sota/Pointnet_Pointnet2_pytorch/results/
 0/
 1/
 first_test/
+data/
+!sota/Titanic/data/
 .DS_Store
 mistralai
 **/*.egg-info
-data/
-!sota/Titanic/data/
 output/
 **/models/
 **/weights/
@@ -23,12 +23,11 @@ output/
 slurm-*.out
 *.pkl
 src/island_temp_*
-cifar10
+cifar10/
 uv.lock
 pareto_fronts
 */run_job_outputs
 .venv/
-weights/
 venv/
 *.pyc
 *.pyo
@@ -37,6 +36,7 @@ Thumbs.db
 analysis/dashboard/uploads/
 analysis/results/analysis/*
 !analysis/results/analysis/.gitkeep
+sota/ExquisiteNetV2/cifar-10-python
 *.out
 *.log
 *.pt
@@ -47,6 +47,19 @@ analysis/results/analysis/*
 *.pklanalysis/scripts/test.py
 analysis/test_data/slurm/pkl/
 run_metrics/
-**/cifar-10-python/
+# Ignore top-level files in analysis/ except PIPELINE.md, README.md, and *.py
+analysis/*
+!analysis/PIPELINE.md
+!analysis/README.md
+!analysis/*.py
+!analysis/*/
+sota/ExquisiteNetV2/cifar-10-python/
 *.code-workspace
-
+mujoco_rl_output
+previous_runs
+run.sh 
+server.sh
+island_controller.sbatch
+templates/**/mutant*.sh
+src/mixt.sh 
+hostname.log

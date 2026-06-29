@@ -37,7 +37,7 @@ PROMPTS = f"templates/{DEFAULT_PROMPT_GROUP}/**/*.txt"
 
 # TODO: Adding this here, I think it's supposed to parse from the command line
 OUTPUT_DIR = "titanic_test"
-PORT = int(os.getenv("LLMGE_PORT", "2244"))
+PORT = int(os.getenv("LLMGE_PORT", "8137"))
 
 LLM_MODEL = 'llama3.3'
 PACE_ICE = True
@@ -115,6 +115,7 @@ if MACOS:
     DEVICE = os.getenv("LLMGE_DEVICE", "mps")
     RUNLINE_AMP = "-amp" if DEVICE == "mps" else ""
 else:
+    DEVICE = 'cpu'
     DEVICE = os.getenv("LLMGE_DEVICE", "cuda")
 
 # resolves to {MODEL}_{gene_id}
