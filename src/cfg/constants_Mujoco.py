@@ -110,7 +110,7 @@ ISLAND_LLMS = [LLM_LLAMA3]
 MAX_ISLANDS = len(ISLAND_LLMS)
 
 #: Python run command (uses uv for dependency management)
-UV_PYTHON = f"env -u VIRTUAL_ENV uv run --no-sync --project {MUJOCO_EVAL_PROJECT_DIR} python"
+UV_PYTHON = f"env -u VIRTUAL_ENV uv run --isolated --project {MUJOCO_EVAL_PROJECT_DIR} python"
 
 # resolves to {MODEL}_{gene_id}; train_rl.py expects models.network_<gene_id>
 RUNLINE_TMP = "{}_{}"
