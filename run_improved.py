@@ -541,7 +541,7 @@ def check4results(gene_id):
         results = results.split(',')
         fitness = [float(r.strip()) for r in results]
         # TODO: get all features later
-        fitness = [fitness[0], fitness[1]]
+        fitness = [fitness[i] for i in range(len(FITNESS_WEIGHTS))]
         fitness = tuple(fitness)
         
         GLOBAL_DATA[gene_id]['status'] = 'completed'

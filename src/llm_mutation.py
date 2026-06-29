@@ -21,26 +21,15 @@ from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf,
                        extract_note, clean_code_from_llm, retrieve_base_code)
 
 def validate_generated_chunk(code_from_llm):
-    """Reject common invalid Mujoco/SB3 policy mutations before evaluation."""
-    if DEFAULT_PROMPT_GROUP != "Mujoco/Normal":
+    """Reject common invalid patterns as defined by config"""
+    try:
+        for pattern, reason in FORBIDDEN_PATTERNS:
+            if pattern in code_from_llm:
+                return False, reason
         return True, ""
-
-    forbidden_patterns = [
-        ("def forward(", "overrides ActorCriticPolicy.forward()"),
-        ("def _predict(", "overrides ActorCriticPolicy._predict()"),
-        ("def evaluate_actions(", "overrides ActorCriticPolicy.evaluate_actions()"),
-        ("def get_distribution(", "overrides ActorCriticPolicy.get_distribution()"),
-        ("def predict_values(", "overrides ActorCriticPolicy.predict_values()"),
-        ("self.mlp_extractor =", "replaces SB3's mlp_extractor with an incompatible module"),
-        ("self.mlp_extractor=", "replaces SB3's mlp_extractor with an incompatible module"),
-        ("self.mlp_extractor.", "accesses unstable SB3 mlp_extractor internals"),
-        ("shared_net", "uses removed/unstable SB3 MlpExtractor internals"),
-    ]
-    for pattern, reason in forbidden_patterns:
-        if pattern in code_from_llm:
-            return False, reason
-
-    return True, ""
+    except NameError:
+        #if FORBIDDEN_PATTERNS not defined return true
+        return True, ""
 
 def augment_network(input_filename='network.py', output_filename='network_x.py', template_txt=None,
                     top_p=0.15, llm_model=LLM_DEEPSEEK, temperature=0.1, apply_quality_control=False):

@@ -109,6 +109,9 @@ python_bash_script: '#!/bin/bash
     echo "Using UV cache: $UV_CACHE_DIR"
 
 
+    export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+
+
     # Run Python script
 
     {}

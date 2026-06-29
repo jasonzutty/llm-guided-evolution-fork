@@ -25,11 +25,11 @@ LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "1648"))
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models")
 #slurm output
 SLURM_OUTPUT_PATH = "run_job_outputs/"
-#: The training/evaluation script for RL
-TRAIN_FILE = os.path.join(SOTA_ROOT, "train_rl.py")
+#: The training/evaluation script for RL (relative path for cluster compatibility)
+TRAIN_FILE = "sota/MujocoRL/train_rl.py"
 ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
-#: Dedicated uv project used only for Mujoco RL evaluation jobs.
-MUJOCO_EVAL_PROJECT_DIR = os.path.join(SOTA_ROOT, "eval_env")
+#: Dedicated uv project used only for Mujoco RL evaluation jobs (relative path for cluster)
+MUJOCO_EVAL_PROJECT_DIR = "sota/MujocoRL/eval_env"
 #: Keep eval runs configurable without changing the shared project environment.
 MUJOCO_EVAL_TIMESTEPS = int(os.getenv("MUJOCO_EVAL_TIMESTEPS", "500000"))
 MUJOCO_EVAL_EPISODES = int(os.getenv("MUJOCO_EVAL_EPISODES", "10"))
