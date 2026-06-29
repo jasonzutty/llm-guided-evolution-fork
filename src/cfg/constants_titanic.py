@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import torch
 import platform
 import yaml
 
@@ -20,6 +19,7 @@ SEED_NETWORK = os.getenv(
 )
 MODEL = "model"
 # Path to local LLM model path used by server.py for LLM operations
+HF_HOME = os.getenv("HF_HOME", "/storage/ice-shared/vip-vvk/llm_storage/")
 MODEL_PATH = "/storage/ice-shared/vip-vvk/llm_storage/meta-llama/Llama-3.3-70B-Instruct/"
 VARIANT_DIR = os.path.join(SOTA_ROOT, "models/llmge_models") 
 TRAIN_FILE = os.path.join(SOTA_ROOT, "eval.py") 
@@ -27,6 +27,9 @@ ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
 
 # Where Slurm job outputs are written (matches sbatch --output paths)
 SLURM_OUTPUT_PATH = "run_job_outputs/"
+
+# Where the vLLM server writes per-request latency/token metrics.
+RUN_METRICS_DIR = os.path.join(ROOT_DIR, "run_metrics")
 
 # Prompt templates glob relative to the repository root
 DEFAULT_PROMPT_GROUP = "FixedPrompts"
@@ -48,11 +51,15 @@ LLM_GEMMA3 = 'gemma3'
 LLM_DEEPSEEK = 'deepseek'
 LLM_GEMINI = 'gemini'
 
+USE_VLLM = os.getenv("LLMGE_USE_VLLM", "1").lower() in ("1", "true", "yes")
+
 # LLMs allowed for island runs
 ISLAND_LLMS = [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_GEMMA3, LLM_GEMINI]
 
 ENVIRONMENT_DIR = os.path.join(ROOT_DIR, ".venv")
-LOCAL_LLM = os.getenv("LOCAL_LLM", "true").lower() in ("true", "1", "yes")
+SLURM_CONFIG_DIR = os.path.join(ROOT_DIR, "slurm-config/")
+LOCAL_LLM = True
+LLM_SERVER_BACKEND = "vllm" if USE_VLLM else "normal"
 HOSTNAME_DIR = os.path.join(ROOT_DIR, "hostname.log")
 
 # Multi-island settings
@@ -100,14 +107,16 @@ else:
     DELAYED_CHECK = os.getenv("DELAYED_CHECK", "true").lower() in ("true", "1", "yes")
 MACOS = platform.system() == "Darwin"
 RUNLINE_AMP = ''
-if torch.mps.is_available():
-    DEVICE = 'mps'
-    MACOS = True
-    RUNLINE_AMP = "-amp"
-elif torch.cuda.is_available():
-    DEVICE = 'cuda'
+# Keep constants import side-effect free. In particular, do not call
+# torch.cuda.is_available() here: server_vllm imports this module before vLLM
+# forks worker processes, and touching CUDA in the parent process can make
+# Slurm/exclusive-process GPUs look busy to the workers.
+if MACOS:
+    DEVICE = os.getenv("LLMGE_DEVICE", "mps")
+    RUNLINE_AMP = "-amp" if DEVICE == "mps" else ""
 else:
     DEVICE = 'cpu'
+    DEVICE = os.getenv("LLMGE_DEVICE", "cuda")
 
 # resolves to {MODEL}_{gene_id}
 RUNLINE_TMP = '{}_{}'

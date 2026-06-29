@@ -4,6 +4,7 @@ import yaml
 from src.cfg import constants
 
 
+
 def replace_script_configuration(file_path, new_config):
     if not os.path.isabs(file_path):
         file_path = os.path.join(constants.ROOT_DIR, file_path)
@@ -69,7 +70,7 @@ mkdir -p "$UV_CACHE_DIR"
 echo "Using UV cache: $UV_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-uv run python run_improved.py titanic_test
+uv run python run_improved.py {constants.OUTPUT_DIR}
 """
     replace_script_configuration("run.sh", run_sh)
 
@@ -124,44 +125,85 @@ echo "Using UV cache: $UV_CACHE_DIR"
 """
 
     # Generate islands bash script template (for islands_wrapper.py)
-    islands_script = sections.get("islands", sections.get("island-controller", "")) + """
+    islands_script = sections.get("islands", sections.get("island-controller", "")) + f"""
 cd $SLURM_SUBMIT_DIR
 echo "launching AIsurBL"
 echo "Started on `/bin/hostname`"
 
 module load cuda
 
-export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+export HF_HOME={constants.HF_HOME}
 
 # Run Python script
-uv run python run_improved.py --checkpoints {} --global_path {} --llm_model {} --prompt_group {}
+uv run python run_improved.py --checkpoints {{checkpoint_path}} --global_path {{global_path}} --llm_model {{llm_model}} --prompt_group {{prompt_group}}
 """
 
     # Generate server.sh
     local_llm_server = f"""
 echo "launching LLM Server"
-
 # Optional chained submission count to work around walltime limits
 COUNT=${{1:-1}}
 
-hostname
+# Backend selection:
+# 1) Positional argument $2
+# 2) Env var LLMGE_SERVER_BACKEND
+# 3) Python constants.LLM_SERVER_BACKEND (derived from USE_VLLM)
+SERVER_BACKEND=${{2:-${{LLMGE_SERVER_BACKEND:-{constants.LLM_SERVER_BACKEND}}}}}
 
+# vLLM package (only used if SERVER_BACKEND=vllm)
+VLLM_PACKAGE=${{VLLM_PACKAGE:-vllm==0.8.5}}
+
+hostname
 module load cuda
 module load uv
 
-# Make sure CUDA can see all GPUs
-export CUDA_VISIBLE_DEVICES=0,1
+# Respect Slurm's GPU assignment. If Slurm did not set CUDA_VISIBLE_DEVICES,
+# fall back to the two local device ordinals requested by this job.
+export CUDA_DEVICE_ORDER="${{CUDA_DEVICE_ORDER:-PCI_BUS_ID}}"
+export CUDA_VISIBLE_DEVICES="${{CUDA_VISIBLE_DEVICES:-0,1}}"
+
+# Cache dirs (used for both backends)
 export UV_CACHE_DIR="${{TMPDIR:-${{SLURM_TMPDIR:-/tmp}}}}/uv-cache-${{SLURM_JOB_ID:-$$}}"
+export XDG_CACHE_HOME="$UV_CACHE_DIR/xdg"
+export TORCHINDUCTOR_CACHE_DIR="$XDG_CACHE_HOME/torchinductor"
+export FLASHINFER_CACHE_DIR="$XDG_CACHE_HOME/flashinfer"
 mkdir -p "$UV_CACHE_DIR"
+mkdir -p "$XDG_CACHE_HOME" "$TORCHINDUCTOR_CACHE_DIR" "$FLASHINFER_CACHE_DIR"
+
+# Prevent transformers from importing TensorFlow (vLLM doesn't need it)
+export USE_TF=0
+export TF_CPP_MIN_LOG_LEVEL=3
+
 echo "Using UV cache: $UV_CACHE_DIR"
+echo "Using XDG cache: $XDG_CACHE_HOME"
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+
+# vLLM-specific env: only meaningful if SERVER_BACKEND=vllm
+export NCCL_DEBUG="${{NCCL_DEBUG:-WARN}}"
+export NCCL_IB_DISABLE="${{NCCL_IB_DISABLE:-1}}"
+export NCCL_P2P_DISABLE="${{NCCL_P2P_DISABLE:-1}}"
+export NCCL_SHM_DISABLE="${{NCCL_SHM_DISABLE:-0}}"
+export VLLM_WORKER_MULTIPROC_METHOD="${{VLLM_WORKER_MULTIPROC_METHOD:-spawn}}"
+export VLLM_DISABLE_CUSTOM_ALL_REDUCE="${{VLLM_DISABLE_CUSTOM_ALL_REDUCE:-true}}"
+export TENSOR_PARALLEL_SIZE="${{TENSOR_PARALLEL_SIZE:-2}}"
+echo "NCCL_IB_DISABLE=$NCCL_IB_DISABLE NCCL_P2P_DISABLE=$NCCL_P2P_DISABLE NCCL_SHM_DISABLE=$NCCL_SHM_DISABLE"
+echo "TENSOR_PARALLEL_SIZE=$TENSOR_PARALLEL_SIZE"
+echo "VLLM_DISABLE_CUSTOM_ALL_REDUCE=$VLLM_DISABLE_CUSTOM_ALL_REDUCE"
+
+# FlashInfer tuning (again, only relevant if vLLM path is used)
+export VLLM_USE_FLASHINFER_SAMPLER="${{VLLM_USE_FLASHINFER_SAMPLER:-0}}"
+export VLLM_ATTENTION_BACKEND="${{VLLM_ATTENTION_BACKEND:-FLASH_ATTN}}"
+echo "VLLM_USE_FLASHINFER_SAMPLER=$VLLM_USE_FLASHINFER_SAMPLER"
+echo "VLLM_ATTENTION_BACKEND=$VLLM_ATTENTION_BACKEND"
+echo "FLASHINFER_CACHE_DIR=$FLASHINFER_CACHE_DIR"
 
 export SERVER_HOSTNAME=$(hostname)
-
 HOSTNAME_FILE=$(pwd)"/hostname.log"
-
-# Write hostname to file so tests can find the server
+echo "Writing server hostname '$SERVER_HOSTNAME' to file: $HOSTNAME_FILE"
 echo "$SERVER_HOSTNAME" > "$HOSTNAME_FILE"
-echo "Wrote hostname to $HOSTNAME_FILE"
+
+echo "Starting LLM server on host: $SERVER_HOSTNAME (count=$COUNT, backend=$SERVER_BACKEND)"
+echo "Using vLLM package: $VLLM_PACKAGE"
 
 # Log the island controller setting for debugging
 echo "SUBMIT_ISLAND_CONTROLLER=${{SUBMIT_ISLAND_CONTROLLER:-<not set>}}"
@@ -175,7 +217,19 @@ else
     echo "Skipping island controller submission (SUBMIT_ISLAND_CONTROLLER=${{SUBMIT_ISLAND_CONTROLLER}})"
 fi
 
-uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port {constants.PORT} --workers 1
+case "$SERVER_BACKEND" in
+    vllm)
+       uv run python -m uvicorn server_vllm:app --host $SERVER_HOSTNAME --port {constants.PORT} --workers 1
+        ;;
+    normal|transformers|baseline)
+        uv run python -m uvicorn server:app --host $SERVER_HOSTNAME --port {constants.PORT} --workers 1
+        ;;
+    *)
+        echo "Unknown LLM server backend '$SERVER_BACKEND'. Use 'vllm' or 'normal'." >&2
+        exit 2
+        ;;
+esac
+
 """
     server_config = sections.get("server-sh", "")
     replace_script_configuration("server.sh", server_config + local_llm_server)
@@ -197,7 +251,7 @@ echo "$COUNT iterations remaining"
 module load cuda
 
 # LLM_Storage
-export HF_HOME=/storage/ice-shared/vip-vvk/llm_storage/
+export HF_HOME={constants.HF_HOME}
 
 # Change to the repository root
 cd {constants.ROOT_DIR}

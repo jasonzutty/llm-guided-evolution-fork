@@ -30,8 +30,8 @@ islands_bash_script: '#!/bin/bash
 
     # Run Python script
 
-    uv run python run_improved.py --checkpoints {} --global_path {} --llm_model {}
-    --prompt_group {}
+    uv run python run_improved.py --checkpoints {checkpoint_path} --global_path {global_path}
+    --llm_model {llm_model} --prompt_group {prompt_group}
 
     '
 llm_bash_script: '#!/bin/bash
