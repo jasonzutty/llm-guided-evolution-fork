@@ -16,7 +16,8 @@ def write_failure_results(gene_id, start_time, message, stats_dir=None):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     results_dir = os.path.join(script_dir, "results")
     os.makedirs(results_dir, exist_ok=True)
-    with open(os.path.join(results_dir, f"{gene_id}_results.txt"), "w") as f:
+    with open(os.path.join(results_dir, f"{gene_id}_results.csv"), "w") as f:
+        f.write("mean_reward,std_reward,train_time,param_count\n")
         f.write(f"-999999.0,0.0,{train_time},999999999")
 
     if stats_dir:
@@ -117,7 +118,8 @@ def main(
     script_dir = os.path.dirname(os.path.abspath(__file__))
     results_dir = os.path.join(script_dir, "results")
     os.makedirs(results_dir, exist_ok=True)
-    with open(os.path.join(results_dir, f"{gene_id}_results.txt"), "w") as f:
+    with open(os.path.join(results_dir, f"{gene_id}_results.csv"), "w") as f:
+        f.write("mean_reward,std_reward,train_time,param_count\n")
         f.write(f"{mean_reward},{std_reward},{train_time},{param_count}")
 
     os.makedirs(stats_dir, exist_ok=True)

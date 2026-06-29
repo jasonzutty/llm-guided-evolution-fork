@@ -533,11 +533,13 @@ def check4results(gene_id):
     job_done = check4error(gene_id)
     if job_done is True:
         out_dir = os.path.join(OUTPUT_DIR, str(GENERATION))
-        # The job saves the model results to a file f'{gene_id}_results.txt'
-        # results_path = os.path.join(out_dir, f'{gene_id}_results.txt')
-        results_path = f'{SOTA_ROOT}/results/{gene_id}_results.txt'
+        # The job saves the model results to a file f'{gene_id}_results.csv'
+        # results_path = os.path.join(out_dir, f'{gene_id}_results.csv')
+        results_path = f'{SOTA_ROOT}/results/{gene_id}_results.csv'
         with open(results_path, 'r') as file:
-            results = file.read()
+            lines = file.readlines()
+        # Skip header line (first line) and parse data line (second line)
+        results = lines[-1].strip() if len(lines) > 1 else lines[0].strip()
         results = results.split(',')
         fitness = [float(r.strip()) for r in results]
         # TODO: get all features later
