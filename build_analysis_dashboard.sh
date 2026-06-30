@@ -6,10 +6,14 @@
 #SBATCH --output=analysis_dashboard-%j.out
 #SBATCH -C intel
 
-# where analysis results are saved
+
+
+# input arg 1: where analysis results are saved
 output_dir=${1:-"analysis/results/analysis"}
-# where run logs are saved
+# input arg 2: where run logs are saved
 input_log_dir=${2:-"run_job_outputs"}
+# input arg 3: LLMGE working directory (stores generation data instead of job data)
+input_target_dir=${3:-"titanic_islands_run2"}
 
 mkdir -p ${output_dir}
 
@@ -17,10 +21,10 @@ echo "summarizing slurm output"
 uv run python analysis/scripts/summarize_slurm.py --input ${input_log_dir} --output ${output_dir}/slurm_summary.csv
 
 echo "getting run inventory"
-uv run python analysis/scripts/inventory_runs.py --input . --output ${output_dir}/run_inventory.csv
+uv run python analysis/scripts/inventory_runs.py --input ${input_target_dir} --output ${output_dir}/run_inventory.csv
 
 echo "extrating metrics"
-uv run python analysis/scripts/extract_metrics.py --input . --output ${output_dir}/run_metrics.csv
+uv run python analysis/scripts/extract_metrics.py --input ${input_target_dir} --output ${output_dir}/run_metrics.csv
 
 echo "building entity summary"
 uv run python analysis/scripts/entity_metrics_summary.py --input ${output_dir}/run_metrics.csv --output ${output_dir}/entity_metrics_summary.csv --report-output ${output_dir}/entity_metrics_report.md
