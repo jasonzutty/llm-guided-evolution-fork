@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOTA = os.path.join(ROOT, 'sota', 'Titanic')
 EVAL_SCRIPT = os.path.join(SOTA, 'eval.py')
 INDIVIDUALS_DIR = os.path.join(os.path.dirname(__file__), 'fixtures', 'individuals')
-RESULTS_DIR = os.path.join(SOTA, 'results')
+RESULTS_DIR = os.path.join(SOTA, 'test_results')
 
 BASELINES_CSV = os.path.join(os.path.dirname(__file__), 'fixtures', 'mutated_baselines.csv')
 

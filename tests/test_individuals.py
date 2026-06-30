@@ -19,7 +19,7 @@ SOTA = os.path.join(ROOT, 'sota', 'Titanic')
 EVAL_SCRIPT = os.path.join(SOTA, 'eval.py')
 CROSSOVER_SCRIPT = os.path.join(ROOT, 'src', 'llm_crossover.py')
 INDIVIDUALS_DIR = os.path.join(os.path.dirname(__file__), 'fixtures', 'individuals')
-RESULTS_DIR = os.path.join(SOTA, 'results')
+RESULTS_DIR = os.path.join(SOTA, 'test_results')
 
 # Total samples in the validation set (used for upper bound check)
 MAX_SAMPLES = 179  # based on processed_train.csv 80/20 split
