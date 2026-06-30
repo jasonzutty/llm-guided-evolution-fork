@@ -109,6 +109,17 @@ LLM_GEMINI = 'gemini'
 ISLAND_LLMS = [LLM_LLAMA3]
 MAX_ISLANDS = len(ISLAND_LLMS)
 
+FORBIDDEN_PATTERNS = [
+        ("def forward(", "overrides ActorCriticPolicy.forward()"),
+        ("def _predict(", "overrides ActorCriticPolicy._predict()"),
+        ("def evaluate_actions(", "overrides ActorCriticPolicy.evaluate_actions()"),
+        ("def get_distribution(", "overrides ActorCriticPolicy.get_distribution()"),
+        ("def predict_values(", "overrides ActorCriticPolicy.predict_values()"),
+        ("self.mlp_extractor =", "replaces SB3's mlp_extractor with an incompatible module"),
+        ("self.mlp_extractor=", "replaces SB3's mlp_extractor with an incompatible module"),
+        ("self.mlp_extractor.", "accesses unstable SB3 mlp_extractor internals"),
+        ("shared_net", "uses removed/unstable SB3 MlpExtractor internals"),
+    ]
 #: Python run command (uses uv for dependency management)
 UV_PYTHON = f"env -u VIRTUAL_ENV uv run --isolated --project {MUJOCO_EVAL_PROJECT_DIR} python"
 
