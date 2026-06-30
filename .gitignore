@@ -11,6 +11,7 @@ sota/Pointnet_Pointnet2_pytorch/results/
 1/
 first_test/
 data/
+!sota/Titanic/data/
 .DS_Store
 mistralai
 **/*.egg-info
@@ -56,4 +57,9 @@ sota/ExquisiteNetV2/cifar-10-python/
 *.code-workspace
 mujoco_rl_output
 previous_runs
-
+run.sh 
+server.sh
+island_controller.sbatch
+templates/**/mutant*.sh
+src/mixt.sh 
+hostname.log
