@@ -22,7 +22,7 @@ output/
 **/llmge_models/
 slurm-*.out
 *.pkl
-src/island_temp_*
+*_temp_*
 cifar10/
 uv.lock
 pareto_fronts
