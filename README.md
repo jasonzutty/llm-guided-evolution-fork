@@ -6,6 +6,7 @@
 <br>
 
 ### Introduction:
+______
 
 In the ever-evolving domain of machine learning, the convergence of human cognitive skills and automated algorithms is entering a pivotal junction. This paper introduces “Guided Evolution” (GE), a novel framework that combines the human-like expertise of Large Language Models (LLMs) with the robust capabilities of Neural Architecture Search (NAS) through genetic algorithms. This innovative fusion advances automated machine learning, elevating traditional NAS by integrating a more insightful, intelligently guided evolutionary process.
 
@@ -21,7 +22,7 @@ ______
 
 This code utilizes [ExquisiteNetV2](https://github.com/shyhyawJou/ExquisiteNetV2) which is copied into the sota directory.
 
-Dependencies are managed through `pyproject.toml`. This package can be installed with `pip install .` or interacted with through tools such as `uv` 
+Dependencies are managed through pyproject.toml. This package can be installed with pip install . or interacted with through tools such as uv
 
 Then follow the instructions to prepare the CIFAR10 dataset in the [ExquisiteNetV2 README](./sota/ExquisiteNetV2/README.md)
 
@@ -29,10 +30,24 @@ This code has been tested on Python 3.12
 
 If you wish to use features with Google's Gemini, please follow the instructions for [Setting Up an API Key](https://ai.google.dev/gemini-api/docs/api-key)
 
+### GitHub Actions Workflows
+
+GitHub Actions workflow files in `.github/workflows/` are intentionally thin wrappers. The shell logic they run lives in `scripts/workflows/` so CI behavior can be tested and updated outside YAML:
+
+- `.github/workflows/python-app.yml` runs `scripts/workflows/python_app.sh`
+- `.github/workflows/sphinx-deploy.yml` runs `scripts/workflows/sphinx_deploy.sh`
+- `.github/workflows/llmge_slurm.yml` runs `scripts/workflows/llmge_slurm.sh`
+- `.github/workflows/upload_test_report.yml` runs `scripts/workflows/upload_test_report.sh`
+
+When changing CI behavior, update the matching script in `scripts/workflows/` first and keep the YAML focused on triggers, permissions, runner selection, artifacts, and deployment.
+
+______
+
 ______
 
 ### Autonomous Model Evolution:
 
+#### ExqusiteNetV2
 <p align="center">
   <img src="./assets/ge_run1.gif" alt="">
 </p>
@@ -43,15 +58,14 @@ ______
 
 [LLM Guided Evolution - The Automation of Models Advancing Models](./assets/paper/LLM_Guided_Evolution___The_Automation_of_Models_Advancing_Models.pdf)
 
-______
 
 ### Cited by DeepMind **AlphaEvolve**
 
-DeepMind’s coding agent **AlphaEvolve** highlights our *LLM-Guided Evolution* framework as prior art that helped inspire its large-scale, code-level evolutionary loop (see reference \[72\] in the white-paper). 
+DeepMind’s agent **AlphaEvolve** references our *LLM-Guided Evolution* framework as prior work (see reference \[72\] in the white-paper). 
 
-AlphaEvolve takes the GE idea of letting an LLM propose, mutate, and test code—and scales it to discover state-of-the-art algorithms across mathematics, scheduling, and hardware design.
+AlphaEvolve shares the GE concept of letting an LLM propose, mutate, and test code and scales it to discover state-of-the-art algorithms across mathematics, scheduling, and hardware design.
 
-We’re proud that the techniques first open-sourced here are now influencing frontier research at Google DeepMind.  
+We’re proud that the concepts first open-sourced here are now being implemented in frontier research at Google DeepMind.  
 Read the white-paper below:
 
 <p align="left">
@@ -60,5 +74,3 @@ Read the white-paper below:
   </a>
 </p>
 <br>
-
-

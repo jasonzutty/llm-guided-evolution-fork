@@ -1,0 +1,6 @@
+Improve the classifier or its hyperparameters in this binary classification model to achieve higher precision on the Titanic survival prediction task without significantly sacrificing recall.
+
+The current code block:
+```python
+{} 
+```

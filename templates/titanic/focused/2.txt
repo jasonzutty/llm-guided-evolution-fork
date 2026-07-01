@@ -1,0 +1,6 @@
+Modify this binary classification model to minimize false negatives — cases where the model incorrectly predicts a passenger did not survive when they actually did. Improving recall is the priority.
+
+The current code block:
+```python
+{} 
+```

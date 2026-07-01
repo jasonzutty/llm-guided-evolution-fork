@@ -1,0 +1,8 @@
+As a leading authority in machine learning and tabular data classification, your deep expertise in ensemble methods, feature engineering, and model selection has made you the go-to expert for high-stakes prediction tasks. You have now been tasked with improving a Titanic survival classifier:
+
+Q: How can you apply meaningful modifications to this binary classification model to substantially elevate its predictive accuracy on the Titanic survival task?
+
+The current code block:
+```python
+{} 
+```

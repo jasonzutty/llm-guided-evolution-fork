@@ -1,18 +1,39 @@
 [project]
 name = "llm-guided-evolution"
 version = "0.1.0"
-description = "Add your description here"
+description = "llm-guided-evolution, virtual envrionment that includes packages necessary for local llm integration & model evalution."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12, <3.13"
 dependencies = [
-    "deap==1.4.1",
+    "deap==1.4.3",
     "flake8>=7.2.0",
     "furo>=2024.8.6",
     "google-genai>=1.12.1",
     "numpy>=2.0.2",
     "pytest>=8.3.5",
     "sphinx>=8.2.3",
+    "sphinx>=8.2.3",
     "torch==2.6.0",
-    "torchvision",
+    "torchvision==0.21.0",
     "transformers",
+    "uvicorn",
+    "fastapi",
+    "accelerate",
+    "numpy",
+    "pydantic",
+    "tqdm",
+    "hydra-core==1.3.2",
+    "omegaconf",
+    "pyyaml",
+    "kaggle>=1.7.4.5",
+    "pandas>=2.3.2, <3.0.0",
+    "scikit-learn>=1.7.2",
+    "imblearn",
+    "matplotlib",
+    "tensorflow>=2.20.0",
+    "streamlit>=1.58.0",
+    "jsonschema",
 ]
+
+[tool.pytest.ini_options]
+junit_logging = "system-out"

@@ -1,0 +1,12 @@
+### Explanation of changes:
+
+*   **Added type hints**: Added type hints for the `length` and `width` parameters in the `__init__` method to specify that they should be numbers.
+*   **Improved docstrings**: Added docstrings to provide a description of each method, including their parameters, return values, and any exceptions that may be raised.
+*   **Renamed methods**: Renamed the `calculate_area` and `calculate_perimeter` methods to `area` and `perimeter`, respectively, to make them more concise and Pythonic.
+*   **Added input validation**: Added checks to ensure that the `length` and `width` are positive numbers.
+
+Here is the refactored code:
+
+```python
+{}
+```

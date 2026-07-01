@@ -1,23 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=AIsur_x1
-#SBATCH -t 8-00:00
+#SBATCH -t 5:00:00
 #SBATCH --gres=gpu:3
-#SBATCH -C "NVIDIAA100-SXM4-80GB|NVIDIAA10080GBPCIe|TeslaV100-PCIE-32GB|GeForceGTX1080Ti|GeForceGTX1080"
+#SBATCH -C "H200"
 #SBATCH --mem 10G
 #SBATCH -c 48
 echo "Launching AIsurBL"
 hostname
-
-# Load GCC version 9.2.0
 module load gcc/13.2.0
-# module load cuda/11.8
-
-# Activate Conda environment
-source /opt/apps/Module/anaconda3/2021.11/bin/activate mix
-conda info
-# NVIDIAA100-SXM4-80GB|NVIDIAA10080GBPCIe|TeslaV100-PCIE-32GB
-# TeslaV100S-PCIE-32GB|TeslaV100S-PCIE-32GB|GeForceGTX1080Ti|GeForceGTX1080
-# Set the TOKENIZERS_PARALLELISM environment variable if needed
+module load uv
+source ~/.bashrc
 export TOKENIZERS_PARALLELISM=false
-
-python llm_crossover.py '/gv1/projects/AI_Surrogate/dev/clint/CodeLLama/codellama/sota/ExquisiteNetV2/network.py' '/gv1/projects/AI_Surrogate/dev/clint/CodeLLama/codellama/sota/ExquisiteNetV2/models/network_x.py' '/gv1/projects/AI_Surrogate/dev/clint/CodeLLama/codellama/sota/ExquisiteNetV2/models/network_z.py' --top_p 0.15 --temperature 0.1 --apply_quality_control 'True' --bit 8
+export UV_CACHE_DIR="${TMPDIR:-${SLURM_TMPDIR:-/tmp}}/uv-cache-${SLURM_JOB_ID:-$$}"
+mkdir -p "$UV_CACHE_DIR"
+echo "Using UV cache: $UV_CACHE_DIR"
+uv run python llm_crossover.py '/storage/ice1/2/5/mgullapalli6/2/llm-guided-evolution-infrastructure/sota/Titanic/model.py' '/storage/ice1/2/5/mgullapalli6/2/llm-guided-evolution-infrastructure/sota/Titanic/models/Menghao/model_x.py' '/storage/ice1/2/5/mgullapalli6/2/llm-guided-evolution-infrastructure/sota/Titanic/models/Menghao/model_z.py'  --top_p 0.15   --temperature 0.1 --apply_quality_control 'True' --bit 8

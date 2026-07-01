@@ -1,0 +1,39 @@
+name: Submit Slurm Job
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  submit-job-to-slurm:
+    runs-on: [self-hosted]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Slurm workflow
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: scripts/workflows/llmge_slurm.sh
+        shell: bash
+
+      - name: Upload XML report
+        if: always()
+        uses: actions/upload-artifact@v3-node20
+        with:
+          name: junit-report
+          path: tests/results/report.xml
+
+      - name: Upload doc suggestions
+        if: always()
+        uses: actions/upload-artifact@v3-node20
+        with:
+          name: doc-suggestions
+          path: tests/results/doc_suggestions.json

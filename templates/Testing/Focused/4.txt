@@ -1,0 +1,6 @@
+Improve this CNN architecture by adding regularization techniques that help reduce overfitting on CIFAR-10.
+
+The current code block:
+```python
+{} 
+```
