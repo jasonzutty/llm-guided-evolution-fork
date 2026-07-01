@@ -19,7 +19,7 @@ SOTA = os.path.join(ROOT, 'sota', 'Titanic')
 EVAL_SCRIPT = os.path.join(SOTA, 'eval.py')
 CROSSOVER_SCRIPT = os.path.join(ROOT, 'src', 'llm_crossover.py')
 INDIVIDUALS_DIR = os.path.join(os.path.dirname(__file__), 'fixtures', 'individuals')
-RESULTS_DIR = os.path.join(SOTA, 'results')
+RESULTS_DIR = os.path.join(SOTA, 'test_results')
 
 # Total samples in the validation set (used for upper bound check)
 MAX_SAMPLES = 179  # based on processed_train.csv 80/20 split
@@ -91,13 +91,15 @@ def test_individual_evaluates(gene_id):
         f"{gene_id}: 'job done' not in output"
 
     # Check results file was written
-    results_file = os.path.join(RESULTS_DIR, f'{gene_id}_results.txt')
+    results_file = os.path.join(RESULTS_DIR, f'{gene_id}_results.csv')
     assert os.path.isfile(results_file), \
         f"{gene_id}: results file not created"
 
     # Validate format and bounds
     with open(results_file) as f:
-        content = f.read().strip()
+        lines = f.readlines()
+    # Skip header line and parse data line
+    content = lines[-1].strip() 
     parts = content.split(',')
     assert len(parts) == 2, f"{gene_id}: expected 'FP,FN', got '{content}'"
 

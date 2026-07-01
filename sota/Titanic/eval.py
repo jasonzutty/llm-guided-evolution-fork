@@ -94,7 +94,7 @@ if __name__ == '__main__':
     Count Total parameters in the Model
     model.parameters() returns an iterable of all the model's parameter
     """
-    results_text = f"{fp_count},{fn_count}"
+    results_text = f"fp_count,fn_count\n{fp_count},{fn_count}"
 
     """
     This line formats the results into comma-separated string
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     Defines an Output Filename
     gene_id is a unique identifier for the experiment or model.
     """
-    filename = os.path.abspath(f'results/{gene_id}_results.txt')
+    filename = os.path.abspath(f'results/{gene_id}_results.csv')
     
     dir_path = os.path.dirname(filename)
 

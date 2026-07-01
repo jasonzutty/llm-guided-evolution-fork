@@ -14,7 +14,7 @@ dependencies = [
     "sphinx>=8.2.3",
     "sphinx>=8.2.3",
     "torch==2.6.0",
-    "torchvision",
+    "torchvision==0.21.0",
     "transformers",
     "uvicorn",
     "fastapi",

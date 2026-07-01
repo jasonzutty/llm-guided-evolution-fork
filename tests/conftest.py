@@ -3,15 +3,20 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
+# Import PORT from constants
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from cfg import constants
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HOSTNAME_FILE = ROOT / "hostname.log"
-PORT = int(os.getenv("LLMGE_SERVER_PORT", "8137"))
+PORT = constants.PORT
 READY_TIMEOUT = int(os.getenv("LLM_SERVER_READY_TIMEOUT", "3600"))
 READY_CHECK_INTERVAL = int(os.getenv("LLM_SERVER_READY_CHECK_INTERVAL", "10"))
 

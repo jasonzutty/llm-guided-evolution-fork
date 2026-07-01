@@ -20,6 +20,17 @@ from llm_utils import (split_file, submit_mixtral, submit_mixtral_hf,
                        llm_code_qc, str2bool, generate_augmented_code, 
                        extract_note, clean_code_from_llm, retrieve_base_code)
 
+def validate_generated_chunk(code_from_llm):
+    """Reject common invalid patterns as defined by config"""
+    try:
+        for pattern, reason in FORBIDDEN_PATTERNS:
+            if pattern in code_from_llm:
+                return False, reason
+        return True, ""
+    except NameError:
+        #if FORBIDDEN_PATTERNS not defined return true
+        return True, ""
+
 def augment_network(input_filename='network.py', output_filename='network_x.py', template_txt=None,
                     top_p=0.15, llm_model=LLM_DEEPSEEK, temperature=0.1, apply_quality_control=False):
     
@@ -37,13 +48,21 @@ def augment_network(input_filename='network.py', output_filename='network_x.py',
     with open(fname, 'r') as file:
         template_txt = file.read()
     
-    # add code to be augmented 
-    txt2llm = template_txt.format(code2llm.strip())
+    # Prompt templates use a single literal "{}" marker for the code chunk.
+    # Using str.format would treat JSON/dict examples in the prompt as fields.
+    if "{}" not in template_txt:
+        raise ValueError(f"Prompt template {fname} must contain a literal {{}} code placeholder")
+    txt2llm = template_txt.replace("{}", code2llm.strip(), 1)
     code_from_llm = generate_augmented_code(txt2llm, augment_idx-1, apply_quality_control,
                                             top_p, llm_model, temperature)
     
     if not code_from_llm:
         code_from_llm = txt2llm
+    else:
+        valid_code, invalid_reason = validate_generated_chunk(code_from_llm)
+        if not valid_code:
+            print(f"Rejected generated chunk: {invalid_reason}. Falling back to parent chunk.", flush=True)
+            code_from_llm = code2llm.strip()
 
     note_txt = extract_note(code2llm)
     parts[augment_idx] = f"\n{note_txt}{code_from_llm}\n"

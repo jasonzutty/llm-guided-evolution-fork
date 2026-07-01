@@ -62,6 +62,7 @@ LLM_GEMMA2 = 'gemma2'
 LLM_GEMMA3 = 'gemma3'
 LLM_DEEPSEEK = 'deepseek'
 LLM_GEMINI = 'gemini'
+LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "1648"))
 
 # API_KEYS
 try:

@@ -150,10 +150,14 @@ def generate_template(PROB_EOT, GEN_COUNT, TOP_N_GENES, SOTA_ROOT, SEED_NETWORK,
         if not prompt_templates:
             raise FileNotFoundError(f"No prompt templates found with glob: {PROMPT_GLOB}")
         template_path = np.random.choice(prompt_templates)
+        print(f"\t‣ Prompt template: {os.path.relpath(template_path, ROOT_DIR)}")
         mute_type = os.path.basename(template_path).split('.')[0]  # Assuming the file extension needs to be removed
         with open(template_path, 'r') as file:
             template_txt = file.read()
-        with open(f'{ROOT_DIR}/templates/ConstantRules.txt', 'r') as file:
+        rules_path = globals().get("CONSTANT_RULES_PATH", "templates/ConstantRules.txt")
+        if not os.path.isabs(rules_path):
+            rules_path = os.path.join(ROOT_DIR, rules_path)
+        with open(rules_path, 'r') as file:
             rules_txt = file.read()
         template_txt = f'{template_txt}\n{rules_txt}'
     return template_txt, mute_type
@@ -529,15 +533,17 @@ def check4results(gene_id):
     job_done = check4error(gene_id)
     if job_done is True:
         out_dir = os.path.join(OUTPUT_DIR, str(GENERATION))
-        # The job saves the model results to a file f'{gene_id}_results.txt'
-        # results_path = os.path.join(out_dir, f'{gene_id}_results.txt')
-        results_path = f'{SOTA_ROOT}/results/{gene_id}_results.txt'
+        # The job saves the model results to a file f'{gene_id}_results.csv'
+        # results_path = os.path.join(out_dir, f'{gene_id}_results.csv')
+        results_path = f'{SOTA_ROOT}/results/{gene_id}_results.csv'
         with open(results_path, 'r') as file:
-            results = file.read()
+            lines = file.readlines()
+        # Skip header line (first line) and parse data line (second line)
+        results = lines[-1].strip() if len(lines) > 1 else lines[0].strip()
         results = results.split(',')
         fitness = [float(r.strip()) for r in results]
         # TODO: get all features later
-        fitness = [fitness[0], fitness[1]]
+        fitness = [fitness[i] for i in range(len(FITNESS_WEIGHTS))]
         fitness = tuple(fitness)
         
         GLOBAL_DATA[gene_id]['status'] = 'completed'

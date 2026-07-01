@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOTA = os.path.join(ROOT, 'sota', 'Titanic')
 EVAL_SCRIPT = os.path.join(SOTA, 'eval.py')
 INDIVIDUALS_DIR = os.path.join(os.path.dirname(__file__), 'fixtures', 'individuals')
-RESULTS_DIR = os.path.join(SOTA, 'results')
+RESULTS_DIR = os.path.join(SOTA, 'test_results')
 
 BASELINES_CSV = os.path.join(os.path.dirname(__file__), 'fixtures', 'mutated_baselines.csv')
 
@@ -152,13 +152,16 @@ def test_mutation_benchmark(gene_id, tmp_path):
         return
 
     # ── Step 4: Read new results and compare ──
-    results_file = os.path.join(RESULTS_DIR, f'{gene_id}_results.txt')
+    results_file = os.path.join(RESULTS_DIR, f'{gene_id}_results.csv')
     if not os.path.isfile(results_file):
         print(f"  {gene_id} EVAL: no results file")
         return
 
     with open(results_file) as f:
-        parts = f.read().strip().split(',')
+        lines = f.readlines()
+    # Skip header line and parse data line
+    data_line = lines[-1].strip() 
+    parts = data_line.split(',')
     new_fp, new_fn = float(parts[0].strip()), float(parts[1].strip())
     new_total = new_fp + new_fn
 
@@ -283,13 +286,16 @@ def test_crossover_benchmark(gene_id_x, gene_id_y, tmp_path):
 
     # ── Step 4: Read new results and compare ──
     crossed_gene_id = f'crossed_{gene_id_x}_{gene_id_y}'
-    results_file = os.path.join(RESULTS_DIR, f'{crossed_gene_id}_results.txt')
+    results_file = os.path.join(RESULTS_DIR, f'{crossed_gene_id}_results.csv')
     if not os.path.isfile(results_file):
         print(f"  ({gene_id_x}, {gene_id_y}) EVAL: no results file")
         return
 
     with open(results_file) as f:
-        parts = f.read().strip().split(',')
+        lines = f.readlines()
+    # Skip header line and parse data line
+    data_line = lines[-1].strip() 
+    parts = data_line.split(',')
     new_fp, new_fn = float(parts[0].strip()), float(parts[1].strip())
     new_total = new_fp + new_fn
 

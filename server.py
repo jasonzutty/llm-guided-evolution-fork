@@ -3,6 +3,11 @@ import os
 import threading
 import time
 
+# This server is PyTorch-only. Prevent Transformers from importing TensorFlow
+# pipeline modules, which can fail when TensorFlow is installed but incomplete.
+os.environ.setdefault("USE_TF", "0")
+os.environ.setdefault("USE_TORCH", "1")
+
 import torch
 import transformers
 from fastapi import FastAPI, HTTPException
@@ -16,7 +21,7 @@ BATCH_WAIT_TIME = 2  # max wait time for batch to fill in s
 
 class LLMRequest(BaseModel):
     prompt: str
-    max_new_tokens: int = 800
+    max_new_tokens: int = LLM_MAX_NEW_TOKENS
     top_p: float = 0.8
     temperature: float = 0.7
 
@@ -28,14 +33,15 @@ class LLMModel:
     def _log_cuda_state():
         print(f"CUDA_VISIBLE_DEVICES={os.getenv('CUDA_VISIBLE_DEVICES', '<unset>')}", flush=True)
         print(f"torch version={torch.__version__}", flush=True)
-        print(f"torch cuda available={torch.cuda.is_available()}", flush=True)
-        print(f"torch cuda device count={torch.cuda.device_count()}", flush=True)
-        if torch.cuda.is_available():
-            for device_idx in range(torch.cuda.device_count()):
-                print(
-                    f"cuda:{device_idx} name={torch.cuda.get_device_name(device_idx)}",
-                    flush=True,
-                )
+        try:
+            cuda_available = torch.cuda.is_available()
+            device_count = torch.cuda.device_count()
+        except Exception as err:
+            print(f"torch cuda introspection failed={err}", flush=True)
+            return
+
+        print(f"torch cuda available={cuda_available}", flush=True)
+        print(f"torch cuda device count={device_count}", flush=True)
 
     @staticmethod
     def _validate_cuda_available():
@@ -62,11 +68,27 @@ class LLMModel:
         self._validate_cuda_available()
         # TODO figure out how to better handle the initialization (i.e. mixtral dies because it doesn't have attention)
         # TODO find out why when this dies the code around it continues i.e. a model is returned to generate_text, but I never see the print out of "I created my instance"
+        # Resolve HF cache directories: if MODEL_PATH is a HF cache dir
+        # (contains 'snapshots/'), find the actual model snapshot
+        model_path = MODEL_PATH
+        import os
+        snapshots_dir = os.path.join(model_path, 'snapshots')
+        if os.path.isdir(snapshots_dir):
+            # Use the latest snapshot
+            snapshot_dirs = sorted(os.listdir(snapshots_dir))
+            if snapshot_dirs:
+                model_path = os.path.join(snapshots_dir, snapshot_dirs[-1])
+                print(f"Resolved HF cache to snapshot: {model_path}")
+
+        device_count = torch.cuda.device_count()
+        max_memory = {idx: "120GiB" for idx in range(device_count)} if device_count else None
+        
         self.model = transformers.AutoModelForCausalLM.from_pretrained(
-            MODEL_PATH,
+            model_path,
             trust_remote_code=True,
             torch_dtype=torch.bfloat16,
             device_map="auto",
+            max_memory=max_memory,
             attn_implementation="sdpa" # faster inference
         ).eval()
         print("model loaded", flush=True)
@@ -104,7 +126,7 @@ class LLMModel:
             temperature=0.1,
             top_p=0.15,
             top_k=0,
-            max_new_tokens=1648,
+            max_new_tokens=LLM_MAX_NEW_TOKENS,
             repetition_penalty=1.1,
             do_sample=True,
             batch_size=BATCH_SIZE # for batch support
