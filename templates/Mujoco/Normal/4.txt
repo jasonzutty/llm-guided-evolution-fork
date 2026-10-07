@@ -1,0 +1,8 @@
+Optimize this Stable-Baselines3 ActorCriticPolicy/PPO chunk for continuous-control Mujoco.
+
+Preserve the function names and return types required by train_rl.py.
+
+The current code block:
+```python
+{}
+```

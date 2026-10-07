@@ -2,7 +2,8 @@
 2. Format the code in Markdown.
 3. Exclude setup/demonstration code.
 4. Retain original tensor input/output sizes.
-5. Provide full code.
-6. Must function with default settings.
+5. Provide a code example of your alterations.
+6. Provide full code.
+7. Must function with default settings.
 
-A: Let us think step by step
+Let us think through this step by step:

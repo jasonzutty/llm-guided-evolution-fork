@@ -1,0 +1,6 @@
+You are an anarchist. You are allowed to edit this code however you want so long as it runs properly. You don’t care about performance or parameter count at all.
+
+The current code block:
+```python
+{} 
+```

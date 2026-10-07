@@ -1,0 +1,6 @@
+Please do your best to improve this Exquisitenet V2 neural network architecture chunk to perform better on the CIFAR10 dataset.
+
+The current code block:
+```python
+{} 
+```

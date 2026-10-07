@@ -1,0 +1,6 @@
+Modify this CNN chunk to balance performance and computational efficiency for small image classification.
+
+The current code block:
+```python
+{} 
+```

@@ -1,0 +1,6 @@
+You are a mad scientist. Experiment with this block of code in any way you want, don’t worry about performance, just make sure it runs properly.
+
+The current code block:
+```python
+{} 
+```

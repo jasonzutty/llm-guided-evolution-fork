@@ -1,8 +1,12 @@
-Question: What are some complex modifications that could be considered to potentially improve the performance of the following existing Python code snippet?
+### Explanation of changes:
+*   **Renamed function**: Renamed `calculate_distance` to `euclidean_distance`.
+*   **Added type hints**: Added type hints for the function parameters and return value.
+*   **Improved docstring**: Added a docstring that describes what the function does, its parameters, and its return value.
+*   **Example usage in main**: Moved example usage into a `main` function with a guard clause.
 
-Here is the current code:
+Here is the refactored code:
 
-(code snippet provided)
+
 ```python
 {}
 ```

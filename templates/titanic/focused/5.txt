@@ -1,0 +1,6 @@
+Optimize the decision threshold or class weights in this binary classification model so that it more reliably identifies passengers who did not survive, reducing costly misclassifications.
+
+The current code block:
+```python
+{} 
+```

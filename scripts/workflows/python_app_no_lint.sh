@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+install_uv() {
+  if command -v uv >/dev/null 2>&1; then
+    return
+  fi
+
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+}
+
+prepare_cifar10() {
+  local archive="cifar-10-python.tar.gz"
+  local target_dir="sota/ExquisiteNetV2"
+
+  # Check if file exists and is valid, remove if corrupted
+  if [ -f "$archive" ]; then
+    if ! gzip -t "$archive" 2>/dev/null; then
+      echo "Existing file is corrupted, removing and re-downloading..."
+      rm -f "$archive"
+    else
+      echo "Using existing valid CIFAR-10 archive"
+    fi
+  fi
+
+  # Download if file doesn't exist
+  if [ ! -f "$archive" ]; then
+    echo "Downloading CIFAR-10 dataset (170MB)..."
+    # Use --progress-bar and add timeout, retry options
+    if ! curl --fail --location --show-error --progress-bar \
+         --max-time 3600 --retry 3 --retry-delay 5 \
+         -o "$archive" "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"; then
+      echo "Error: Download failed"
+      rm -f "$archive"
+      exit 1
+    fi
+
+    # Verify the download is a valid gzip file
+    if ! gzip -t "$archive" 2>/dev/null; then
+      echo "Error: Downloaded file is not a valid gzip archive"
+      rm -f "$archive"
+      exit 1
+    fi
+    echo "Download successful and verified"
+  fi
+
+  if [ ! -d "$target_dir/cifar-10-batches-py" ]; then
+    echo "Extracting CIFAR-10 dataset..."
+    tar -xzf "$archive" -C "$target_dir/"
+  fi
+
+  (
+    cd "$target_dir"
+    uv run split.py
+  )
+}
+
+install_uv
+uv sync
+prepare_cifar10
+
+# Load CUDA module if running on HPC with module system
+if command -v module >/dev/null 2>&1; then
+  module load cuda 2>/dev/null || echo "CUDA module not available"
+fi
+
+# Ensure CUDA is visible to PyTorch
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+
+# Let conftest.py auto-start the server (default behavior)
+# Use -v for verbose output and -s to disable output capture (show print statements)
+uv run pytest -v -s

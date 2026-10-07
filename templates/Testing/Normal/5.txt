@@ -1,0 +1,6 @@
+Edit this neural network architecture to achieve pareto-optimal dominance in performance with low parameterization.
+
+The current code block:
+```python
+{} 
+```

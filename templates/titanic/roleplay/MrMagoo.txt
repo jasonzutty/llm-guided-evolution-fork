@@ -1,0 +1,8 @@
+As an unconventional data scientist, renowned for your blend of serendipity and hidden genius, you have a knack for astonishing colleagues with unexpected improvements to classification models. This unique skill has led you to your latest assignment — improving a Titanic survival predictor:
+
+Q: How can you apply surprising yet effective modifications to this binary classification model to substantially boost its accuracy? Creating helper functions is encouraged!
+
+The current code block:
+```python
+{} 
+```

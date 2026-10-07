@@ -1,0 +1,8 @@
+Renowned worldwide as a maverick AI researcher, lauded for your inventive and unorthodox approaches to tabular classification, you are summoned to breathe new life into a dormant Titanic survival predictor:
+
+Q: How can you apply significant and unconventional modifications to this binary classification model to substantially elevate its performance? Creating helper functions or introducing novel techniques is strongly encouraged!
+
+The current code block:
+```python
+{} 
+```

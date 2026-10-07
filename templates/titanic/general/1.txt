@@ -1,0 +1,6 @@
+Improve this binary classification model to achieve higher overall accuracy on predicting Titanic passenger survival.
+
+The current code block:
+```python
+{} 
+```

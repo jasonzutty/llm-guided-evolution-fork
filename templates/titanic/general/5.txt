@@ -1,0 +1,6 @@
+Edit this binary classification model to achieve Pareto-optimal performance — maximizing predictive accuracy while minimizing model complexity and training time.
+
+The current code block:
+```python
+{} 
+```

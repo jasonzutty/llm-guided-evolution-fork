@@ -1,0 +1,8 @@
+Improve this Stable-Baselines3 PPO policy/hyperparameter chunk for HalfCheetah-v4.
+
+You are editing sota/MujocoRL/network.py, not a supervised classifier. Keep the required SB3 contract intact.
+
+The current code block:
+```python
+{}
+```

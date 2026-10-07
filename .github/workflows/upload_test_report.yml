@@ -1,0 +1,47 @@
+name: Publish XML report history to GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["Submit Slurm Job"]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true
+
+      - name: Publish report history
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          ACTOR: ${{ github.event.workflow_run.actor.login }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          SERVER_URL: ${{ github.server_url }}
+          API_URL: ${{ github.api_url }}
+        run: scripts/workflows/upload_test_report.sh
+        shell: bash
+
+      - name: Push site history
+        run: |
+          cd gh-pages
+          git pull --rebase origin gh-pages || true
+          git push origin HEAD:gh-pages
+        shell: bash

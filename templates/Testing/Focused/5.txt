@@ -1,0 +1,6 @@
+Propose architecture modifications that maintain or improve accuracy while cutting parameter count by at least 30%.
+
+The current code block:
+```python
+{} 
+```

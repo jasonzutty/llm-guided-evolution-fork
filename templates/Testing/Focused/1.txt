@@ -1,0 +1,6 @@
+Remove layer(s) or complexity from this neural network architecture to reduce its parameters and training time.
+
+The current code block:
+```python
+{} 
+```

@@ -1,0 +1,193 @@
+import os
+import numpy as np
+import torch
+import yaml
+
+# Whether we are running on PACE-ICE (True) or ICEHAMMER (False)
+PACE_ICE = True
+EVAL_NO_PROGRESS_TIMEOUT_SECONDS = int(os.getenv("LLMGE_EVAL_NO_PROGRESS_TIMEOUT_SECONDS", str(40 * 60)))
+
+
+# Root directory of the repository
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sota_root = os.path.join(root_dir, "sota", "ExquisiteNetV2")
+ROOT_DIR = os.getenv("LLMGE_ROOT_DIR", root_dir)
+SLURM_CONFIG_DIR = os.getenv(
+    "LLMGE_SLURM_CONFIG_DIR",
+    os.path.join(ROOT_DIR, "slurm-config"),
+)
+CLUSTER = os.getenv("LLMGE_CLUSTER", "pace-ice")
+PORT = int(os.getenv("LLMGE_PORT", "8137"))
+
+GLOBAL_DATA_PATH = "global_data"
+SLURM_OUTPUT_PATH = "run_job_outputs/"
+
+DEFAULT_PROMPT_GROUP = "Testing/Normal"
+PROMPT_GROUP_TEMPLATE = "templates/Testing/{prompt_group}/*.txt"
+PROMPTS = f"templates/{DEFAULT_PROMPT_GROUP}/*.txt"
+
+#: DATA_PATH absolute or relative to ExquisiteNetV2
+DATA_PATH = os.path.join(ROOT_DIR, 'cifar10')
+#: Location where the current seed repo resides
+SOTA_ROOT = os.getenv("LLMGE_SOTA_ROOT", sota_root)
+#: Location where the network architecture for the seed resides
+SEED_NETWORK = os.getenv(
+    "LLMGE_SEED_NETWORK",
+    os.path.join(SOTA_ROOT, "network.py"),
+)
+#: Whether to run llm-ge locally (True) or distribute across a slurm cluster  (False)
+LOCAL = False
+if LOCAL:
+    RUN_COMMAND = 'bash'
+    DELAYED_CHECK = False
+else: 
+    RUN_COMMAND = 'sbatch'
+    DELAYED_CHECK = True
+
+#: Whether host uses macOS (True) and should use mps, or not (False) and should use cpu or cuda depending on what is available
+MACOS = False
+if torch.mps.is_available():
+    DEVICE = 'mps'
+    MACOS = True
+elif torch.cuda.is_available():
+    DEVICE = 'cuda'
+else:
+    DEVICE = 'cpu'
+
+# AVAILABLE LLMs
+LLM_QWEN = 'qwen25'
+LLM_MIXTRAL = 'mixtral'
+LLM_LLAMA3 = 'llama3'
+LLM_GEMMA2 = 'gemma2'
+LLM_GEMMA3 = 'gemma3'
+LLM_DEEPSEEK = 'deepseek'
+LLM_GEMINI = 'gemini'
+LLM_MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "1648"))
+
+# API_KEYS
+try:
+    GEMINI_API_KEY = os.environ['GEMINI_API_KEY']
+except:
+    GEMINI_API_KEY = ''
+
+ISLAND_LLMS =[LLM_LLAMA3, LLM_DEEPSEEK] # [LLM_QWEN, LLM_MIXTRAL, LLM_DEEPSEEK, LLM_LLAMA3, LLM_GEMMA2, LLM_GEMMA3, LLM_GEMINI]
+
+MAX_ISLANDS = len(ISLAND_LLMS)
+
+SLURM_MIXT_INPUT_X = SEED_NETWORK
+SLURM_MIXT_INPUT_Y = os.path.join(SOTA_ROOT, "models/Menghao/model_x.py")
+SLURM_MIXT_OUTPUT = os.path.join(SOTA_ROOT, "models/Menghao/model_z.py")
+SLURM_MIXT_TOP_P = 0.15
+SLURM_MIXT_TEMPERATURE = 0.1
+SLURM_MIXT_APPLY_QUALITY_CONTROL = True
+SLURM_MIXT_BIT = 8
+
+ISLAND_CONTROLLER_RUN_NAME = "cifar10_islands_run"
+ISLAND_CONTROLLER_NUM_ISLANDS = 3
+ISLAND_CONTROLLER_LLMS = "llama3"
+# these are titanic oriented prompts, other data sets should consider new prompts
+ISLAND_CONTROLLER_PROMPT_GROUPS = "titanic/focused,titanic/general,titanic/roleplay"
+ISLAND_TEMP_SCRIPT = os.path.join("src", "island_temp_script_{ISLAND_NUM}.sh")
+
+# Evolution Constants/Params
+# --------------------------
+
+#: Tuple of fitness weights of length equal to the number of objectives.
+#: 1.0 indicates objective will be maximized, -1.0 for objective to by minimized.
+FITNESS_WEIGHTS = (1.0, -1.0)
+INVALID_FITNESS_MAX = tuple([float(x*np.inf*-1) for x in FITNESS_WEIGHTS])
+PLACEHOLDER_FITNESS = tuple([int(x*9999999999*-1) for x in FITNESS_WEIGHTS])
+
+#: Number of elite individuals to utilize within the Evolution of Thought (EOT) operation
+NUM_EOT_ELITES = 4
+
+#: Cycle in the optimization and output directory where intermediate data will be stored.
+GENERATION = 0
+
+PROB_QC = 0.0 # Probability of running quality control checks on responses from the LLM
+PROB_EOT = 0.0 # Probability of running Evolution of Thought (EOT) on the responses from the LLM
+
+#: Number of generations to run for
+num_generations = 2  # Number of generations
+
+#: Number of generations between migrations
+migration_gen = 2 # Set to 0 to disable migrations (1 island runs)
+
+#: Population size for launching optimization
+start_population_size = 40
+
+#: Population size to utilize in each generation after optimization begins
+# population_size = 44 # with cx_prob (0.25) and mute_prob (0.7) you get about %50 successful turnover
+population_size = 16
+
+#: Probability of mating two individuals
+crossover_probability = 0.35
+
+#: Probability of mutating an individual
+mutation_probability = 0.8
+
+#: Number of elites to consider
+num_elites = 8
+
+#: Number of individuals to keep in the hall of fame across the optimization
+hof_size = 100
+
+# Maximum number of attempts to generate a new individual before giving up
+max_gen_attempts = 5
+
+
+# Job Sub Constants/Params
+# ------------------------
+
+
+#: Whether (True) or not (False) you wish to run quality control checks on responses from the LLM
+QC_CHECK_BOOL = False
+#: Whether (True) or not (False) to submit LLM prompts remotely to sources such as hugging face.
+INFERENCE_SUBMISSION = False
+
+# Load SLURM templates from slurm_config.yaml (generated by slurm.py)
+_slurm_config_path = os.path.join(SLURM_CONFIG_DIR, 'slurm_config.yaml')
+if os.path.exists(_slurm_config_path):
+    with open(_slurm_config_path, 'r') as _f:
+        _slurm_config = yaml.safe_load(_f)
+    LLM_GPU = _slurm_config.get('gpu_selection', 'H200|H100')
+    PYTHON_BASH_SCRIPT_TEMPLATE = _slurm_config.get('python_bash_script', '')
+    LLM_BASH_SCRIPT_TEMPLATE = _slurm_config.get('llm_bash_script', '')
+    ISLANDS_BASH_SCRIPT_TEMPLATE = _slurm_config.get('islands_bash_script', '')
+else:
+    # Fallback defaults if slurm_config.yaml hasn't been generated yet
+    LLM_GPU = 'H200|H100'
+    PYTHON_BASH_SCRIPT_TEMPLATE = ''
+    LLM_BASH_SCRIPT_TEMPLATE = ''
+    ISLANDS_BASH_SCRIPT_TEMPLATE = ''
+
+
+"""
+Misc. Non-sense
+"""
+DNA_TXT = """
+⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⣿⡇⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣶⣶⠶⣶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⣀⣹⣟⣛⣛⣻⣿⣿⣿⡾⠟⢉⣴⠟⢁⣴⠋⣹⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠈⠛⠛⣿⠉⢉⣩⠵⠚⠁⢀⡴⠛⠁⣠⠞⠁⣰⠏⠸⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⢻⣷⠋⠁⠀⢀⡴⠋⠀⢀⡴⠋⠀⣼⠃⠀⡼⢿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢻⣆⣠⡴⠋⠀⠀⣠⠟⠀⢀⡾⠁⠀⡼⠁⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠻⣯⡀⠀⢀⡼⠃⠀⢠⡟⠀⢀⡾⠁⢀⣾⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠙⠻⣶⣟⡀⠀⣰⠏⠀⢀⡾⠁⠀⣼⢹⣿⣀⣤⣤⣴⠶⢿⡿⠛⢛⣷⢶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠶⠶⠾⠷⠶⠿⠛⢻⣟⠉⣥⠟⠁⣠⠟⠀⢠⠞⠁⣄⡿⠻⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⠞⠁⢀⡴⠋⠀⣴⠋⠀⣰⠟⠀⣤⡾⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⡄⢠⠞⠁⢀⡾⠁⢀⡼⠃⢀⡴⠋⠀⢸⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣷⠋⠀⣰⠏⠀⣠⠟⠀⣰⠟⠁⢀⡴⠛⣿⠀⠀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⣧⡼⠃⢀⡼⠋⢠⡞⠁⣠⣞⣋⣤⣶⣿⡟⠛⣿⠛⠛⣻⠟⠷⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠻⣦⣾⣤⣴⣯⡶⠾⠟⠛⠉⠉⠉⣿⡇⢠⡏⠀⣰⠏⠀⢀⣼⠋⠻⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⡾⠀⢰⠏⠀⢠⡞⠁⠀⣠⠞⢻⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣷⠇⢠⠏⠀⣰⠋⠀⣠⠞⠁⠀⢀⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡟⢠⠟⢀⡼⠁⣠⠞⠁⣀⣴⢾⣿⣤⣿⣦⣄⣀⡀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⡟⣠⠏⣠⠞⣁⣴⣾⣿⣿⣿⣿⣿⣿⡏⢹⡏⠛⠳⣦⣄⡀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⢷⣾⣷⠿⠿⠛⠉⠀⠀⠈⠳⣬⣿⡟⣾⠁⠀⣼⠃⠉⠻⠆
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣧⡏⠀⣼⠃⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠁⡼⠁⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣟⡼⠁⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡿⠁⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢙⣃⠀⠀
+"""
